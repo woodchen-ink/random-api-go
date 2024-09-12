@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"log"
 	"math/rand"
@@ -39,7 +40,13 @@ func main() {
 		log.Fatal("Failed to load CSV paths:", err)
 	}
 
-	http.HandleFunc("/", handleRequest)
+	// 设置静态文件服务
+	fs := http.FileServer(http.Dir("./public"))
+	http.Handle("/", fs)
+
+	// 设置 API 路由
+	http.HandleFunc("/pic/", handleAPIRequest)
+	http.HandleFunc("/video/", handleAPIRequest)
 
 	log.Printf("Listening on %s...\n", port)
 	if err := http.ListenAndServe(port, nil); err != nil {
@@ -52,7 +59,8 @@ func setupLogging() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	log.SetOutput(logFile)
+	multiWriter := io.MultiWriter(os.Stdout, logFile)
+	log.SetOutput(multiWriter)
 	log.SetFlags(log.Ldate | log.Ltime | log.Lshortfile)
 }
 
@@ -132,9 +140,9 @@ func getCSVContent(path string) ([]string, error) {
 	return fileArray, nil
 }
 
-func handleRequest(w http.ResponseWriter, r *http.Request) {
-	start := time.Now()
+func handleAPIRequest(w http.ResponseWriter, r *http.Request) {
 	realIP := getRealIP(r)
+	log.Printf("Handling request from IP: %s\n", realIP)
 
 	if time.Since(lastFetchTime) > cacheDuration {
 		if err := loadCSVPaths(); err != nil {
@@ -148,7 +156,7 @@ func handleRequest(w http.ResponseWriter, r *http.Request) {
 	pathSegments := strings.Split(path, "/")
 
 	if len(pathSegments) < 2 {
-		http.ServeFile(w, r, filepath.Join("public", "index.html"))
+		http.NotFound(w, r)
 		return
 	}
 
@@ -178,9 +186,6 @@ func handleRequest(w http.ResponseWriter, r *http.Request) {
 
 	randomURL := fileArray[rng.Intn(len(fileArray))]
 
-	duration := time.Since(start)
-	log.Printf("Request: %s %s from %s - Duration: %v - Redirecting to: %s\n",
-		r.Method, r.URL.Path, realIP, duration, randomURL)
-
+	log.Printf("Redirecting to %s\n", randomURL)
 	http.Redirect(w, r, randomURL, http.StatusFound)
 }
