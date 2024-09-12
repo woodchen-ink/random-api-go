@@ -24,6 +24,8 @@ WORKDIR /root/
 
 COPY --from=builder /app/random-api .
 COPY --from=builder /app/public ./public
+# 复制 public 目录到一个临时位置
+COPY --from=builder /app/public /tmp/public
 
 # 创建日志目录并设置权限
 RUN mkdir -p /var/log/random-api && chmod 755 /var/log/random-api
@@ -34,5 +36,8 @@ EXPOSE 5003
 RUN apk add --no-cache tini
 ENTRYPOINT ["/sbin/tini", "--"]
 
-# 运行应用
-CMD ["./random-api"]
+# 创建一个启动脚本
+COPY start.sh /start.sh
+RUN chmod +x /start.sh
+
+CMD ["/start.sh"]
