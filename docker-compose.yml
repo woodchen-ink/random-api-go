@@ -1,0 +1,11 @@
+services:
+  random-api:
+    image: woodchen/random-api-go:latest
+    ports:
+      - "5003:5003"
+    volumes:
+      - ./public:/root/public
+      - ./logs:/var/log/random-api
+    environment:
+      - TZ=Asia/Shanghai
+    restart: unless-stopped

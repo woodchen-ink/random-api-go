@@ -1,0 +1,15 @@
+{
+    "pic": {
+      "all": "https://random-api.czl.net/url/pic/all.csv",
+      "fjht": "https://random-api.czl.net/url/pic/fjht.csv",
+      "czlwb": "https://random-api.czl.net/url/pic/czl-website-background.csv",
+      "truegirl": "https://random-api.czl.net/url/pic/truegirl.csv",
+      "ecy": "https://random-api.czl.net/url/pic/ecy.csv",
+      "ecy1": "https://random-api.czl.net/url/pic/ecy1.csv",
+      "ecy2": "https://random-api.czl.net/url/pic/ecy2.csv"
+    },
+    "video": {
+      "all": "https://random-api.czl.net/url/video/all.csv"
+    }
+}
+  
