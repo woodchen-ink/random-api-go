@@ -141,8 +141,8 @@ func getCSVContent(path string) ([]string, error) {
 }
 
 func handleAPIRequest(w http.ResponseWriter, r *http.Request) {
+	start := time.Now()
 	realIP := getRealIP(r)
-	log.Printf("Handling request from IP: %s\n", realIP)
 
 	if time.Since(lastFetchTime) > cacheDuration {
 		if err := loadCSVPaths(); err != nil {
@@ -186,6 +186,9 @@ func handleAPIRequest(w http.ResponseWriter, r *http.Request) {
 
 	randomURL := fileArray[rng.Intn(len(fileArray))]
 
-	log.Printf("Redirecting to %s\n", randomURL)
+	duration := time.Since(start)
+	log.Printf("Request: %s %s from %s - Duration: %v - Redirecting to: %s\n",
+		r.Method, r.URL.Path, realIP, duration, randomURL)
+
 	http.Redirect(w, r, randomURL, http.StatusFound)
 }
