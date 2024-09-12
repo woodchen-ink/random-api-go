@@ -30,22 +30,16 @@ var (
 )
 
 func main() {
-	// 初始化随机数生成器
 	source := rand.NewSource(time.Now().UnixNano())
 	rng = rand.New(source)
 
-	// 配置日志
 	setupLogging()
 
-	// 加载初始的 CSV 路径配置
 	if err := loadCSVPaths(); err != nil {
 		log.Fatal("Failed to load CSV paths:", err)
 	}
 
-	// 设置路由
-	http.Handle("/", http.FileServer(http.Dir("./public")))
-	http.HandleFunc("/pic/", logRequest(handleDynamicRequest))
-	http.HandleFunc("/video/", logRequest(handleDynamicRequest))
+	http.HandleFunc("/", handleRequest)
 
 	log.Printf("Listening on %s...\n", port)
 	if err := http.ListenAndServe(port, nil); err != nil {
@@ -83,27 +77,6 @@ func getRealIP(r *http.Request) string {
 	return ip
 }
 
-func logRequest(handler http.HandlerFunc) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		start := time.Now()
-		handler(w, r)
-		duration := time.Since(start)
-
-		realIP := getRealIP(r)
-		proto := r.Header.Get("X-Forwarded-Proto")
-		if proto == "" {
-			proto = "http"
-		}
-		host := r.Header.Get("X-Forwarded-Host")
-		if host == "" {
-			host = r.Host
-		}
-
-		log.Printf("Request: %s %s://%s%s from %s - Duration: %v\n",
-			r.Method, proto, host, r.URL.Path, realIP, duration)
-	}
-}
-
 func loadCSVPaths() error {
 	jsonPath := filepath.Join("public", "url.json")
 	log.Printf("Attempting to read file: %s", jsonPath)
@@ -132,7 +105,6 @@ func getCSVContent(path string) ([]string, error) {
 	content, exists := csvCache[path]
 	mu.RUnlock()
 	if exists {
-		log.Printf("CSV content for %s found in cache\n", path)
 		return content, nil
 	}
 
@@ -157,13 +129,12 @@ func getCSVContent(path string) ([]string, error) {
 	csvCache[path] = fileArray
 	mu.Unlock()
 
-	log.Printf("CSV content for %s fetched and cached\n", path)
 	return fileArray, nil
 }
 
-func handleDynamicRequest(w http.ResponseWriter, r *http.Request) {
+func handleRequest(w http.ResponseWriter, r *http.Request) {
+	start := time.Now()
 	realIP := getRealIP(r)
-	log.Printf("Handling request from IP: %s\n", realIP)
 
 	if time.Since(lastFetchTime) > cacheDuration {
 		if err := loadCSVPaths(); err != nil {
@@ -175,8 +146,9 @@ func handleDynamicRequest(w http.ResponseWriter, r *http.Request) {
 
 	path := strings.TrimPrefix(r.URL.Path, "/")
 	pathSegments := strings.Split(path, "/")
+
 	if len(pathSegments) < 2 {
-		http.NotFound(w, r)
+		http.ServeFile(w, r, filepath.Join("public", "index.html"))
 		return
 	}
 
@@ -199,19 +171,16 @@ func handleDynamicRequest(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if len(fileArray) == 0 {
+		http.Error(w, "No content available", http.StatusNotFound)
+		return
+	}
+
 	randomURL := fileArray[rng.Intn(len(fileArray))]
 
-	proto := r.Header.Get("X-Forwarded-Proto")
-	if proto == "" {
-		proto = "http"
-	}
-	host := r.Header.Get("X-Forwarded-Host")
-	if host == "" {
-		host = r.Host
-	}
+	duration := time.Since(start)
+	log.Printf("Request: %s %s from %s - Duration: %v - Redirecting to: %s\n",
+		r.Method, r.URL.Path, realIP, duration, randomURL)
 
-	redirectURL := fmt.Sprintf("%s://%s%s", proto, host, randomURL)
-
-	log.Printf("Redirecting to %s\n", redirectURL)
-	http.Redirect(w, r, redirectURL, http.StatusFound)
+	http.Redirect(w, r, randomURL, http.StatusFound)
 }
