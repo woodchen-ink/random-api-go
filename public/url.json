@@ -1,15 +1,14 @@
 {
-    "pic": {
-      "all": "https://random-api.czl.net/url/pic/all.csv",
-      "fjht": "https://random-api.czl.net/url/pic/fjht.csv",
-      "czlwb": "https://random-api.czl.net/url/pic/czl-website-background.csv",
-      "truegirl": "https://random-api.czl.net/url/pic/truegirl.csv",
-      "ecy": "https://random-api.czl.net/url/pic/ecy.csv",
-      "ecy1": "https://random-api.czl.net/url/pic/ecy1.csv",
-      "ecy2": "https://random-api.czl.net/url/pic/ecy2.csv"
-    },
-    "video": {
-      "all": "https://random-api.czl.net/url/video/all.csv"
-    }
+  "pic": {
+    "all": "url/pic/all.csv",
+    "fjht": "url/pic/fjht.csv",
+    "czlwb": "url/pic/czl-website-background.csv",
+    "truegirl": "url/pic/truegirl.csv",
+    "ecy": "url/pic/ecy.csv",
+    "ecy1": "url/pic/ecy1.csv",
+    "ecy2": "url/pic/ecy2.csv"
+  },
+  "video": {
+    "all": "url/video/all.csv"
+  }
 }
-  

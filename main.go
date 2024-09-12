@@ -9,6 +9,7 @@ import (
 	"math/rand"
 	"net/http"
 	"os"
+	"path/filepath"
 	"strings"
 	"sync"
 	"time"
@@ -77,14 +78,30 @@ func logRequest(handler http.HandlerFunc) http.HandlerFunc {
 
 // 加载 CSV 路径配置
 func loadCSVPaths() error {
-	data, err := ioutil.ReadFile("./public/url.json")
+	// 获取当前工作目录
+	currentDir, err := os.Getwd()
 	if err != nil {
-		return fmt.Errorf("failed to read url.json: %w", err)
+			return fmt.Errorf("failed to get current directory: %w", err)
+	}
+	log.Printf("Current working directory: %s", currentDir)
+
+	// 构建 url.json 的完整路径
+	jsonPath := filepath.Join(currentDir, "public", "url.json")
+	log.Printf("Attempting to read file: %s", jsonPath)
+
+	// 检查文件是否存在
+	if _, err := os.Stat(jsonPath); os.IsNotExist(err) {
+			return fmt.Errorf("url.json does not exist at %s", jsonPath)
+	}
+
+	data, err := ioutil.ReadFile(jsonPath)
+	if err != nil {
+			return fmt.Errorf("failed to read url.json: %w", err)
 	}
 
 	var result map[string]map[string]string
 	if err := json.Unmarshal(data, &result); err != nil {
-		return fmt.Errorf("failed to unmarshal url.json: %w", err)
+			return fmt.Errorf("failed to unmarshal url.json: %w", err)
 	}
 
 	mu.Lock()
@@ -96,47 +113,60 @@ func loadCSVPaths() error {
 	return nil
 }
 
-func getCSVContent(url string) ([]string, error) {
+func getCSVContent(path string) ([]string, error) {
 	mu.RLock()
-	content, exists := csvCache[url]
+	content, exists := csvCache[path]
 	mu.RUnlock()
 	if exists {
-		log.Printf("CSV content for %s found in cache\n", url)
-		return content, nil
+			log.Printf("CSV content for %s found in cache\n", path)
+			return content, nil
 	}
 
-	client := &http.Client{Timeout: requestTimeout}
-	resp, err := client.Get(url)
+	var fileContent []byte
+	var err error
+
+	if strings.HasPrefix(path, "http://") || strings.HasPrefix(path, "https://") {
+			// 处理远程 URL
+			client := &http.Client{Timeout: requestTimeout}
+			resp, err := client.Get(path)
+			if err != nil {
+					return nil, fmt.Errorf("error fetching CSV content: %w", err)
+			}
+			defer resp.Body.Close()
+
+			if resp.StatusCode != http.StatusOK {
+					return nil, fmt.Errorf("failed to fetch CSV content: %s", resp.Status)
+			}
+
+			fileContent, err = ioutil.ReadAll(resp.Body)
+	} else {
+			// 处理本地文件
+			fullPath := filepath.Join("public", path) // 注意这里的更改
+			log.Printf("Attempting to read file: %s", fullPath)
+			fileContent, err = ioutil.ReadFile(fullPath)
+	}
+
 	if err != nil {
-		return nil, fmt.Errorf("error fetching CSV content: %w", err)
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("failed to fetch CSV content: %s", resp.Status)
+			return nil, fmt.Errorf("error reading CSV content: %w", err)
 	}
 
-	body, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		return nil, fmt.Errorf("error reading CSV content: %w", err)
-	}
-
-	lines := strings.Split(string(body), "\n")
+	lines := strings.Split(string(fileContent), "\n")
 	var fileArray []string
 	for _, line := range lines {
-		trimmed := strings.TrimSpace(line)
-		if trimmed != "" && !strings.HasPrefix(trimmed, "#") {
-			fileArray = append(fileArray, trimmed)
-		}
+			trimmed := strings.TrimSpace(line)
+			if trimmed != "" && !strings.HasPrefix(trimmed, "#") {
+					fileArray = append(fileArray, trimmed)
+			}
 	}
 
 	mu.Lock()
-	csvCache[url] = fileArray
+	csvCache[path] = fileArray
 	mu.Unlock()
 
-	log.Printf("CSV content for %s fetched and cached\n", url)
+	log.Printf("CSV content for %s fetched and cached\n", path)
 	return fileArray, nil
 }
+
 
 func handleDynamicRequest(w http.ResponseWriter, r *http.Request) {
 	if time.Since(lastFetchTime) > cacheDuration {
