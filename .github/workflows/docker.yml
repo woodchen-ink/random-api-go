@@ -69,7 +69,6 @@ jobs:
             mv -f /tmp/public_temp/public/* /opt/1panel/docker/compose/random-api-go/public/
 
             # 设置目录及其子文件的所有权和权限
-            chown -R 1000:1000 /opt/1panel/docker/compose/random-api-go/public
             chmod -R 0755 /opt/1panel/docker/compose/random-api-go/public
 
             # 清理临时文件
