@@ -12,6 +12,7 @@
 | 二次元2 | [https://random-api.czl.net/pic/ecy2](https://random-api.czl.net/pic/ecy2) |
 | 风景 | [https://random-api.czl.net/pic/fj](https://random-api.czl.net/pic/fj) |
 | AI绘图 | [https://random-api.czl.net/pic/ai](https://random-api.czl.net/pic/ai) |
+| 加载 | [https://random-api.czl.net/pic/loading](https://random-api.czl.net/pic/loading) |
 
 --- 
 

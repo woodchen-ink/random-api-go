@@ -7,7 +7,8 @@
     "ecy": "url/pic/ecy.csv",
     "ecy1": "url/pic/ecy1.csv",
     "ecy2": "url/pic/ecy2.csv",
-    "ai": "url/pic/ai.csv"
+    "ai": "url/pic/ai.csv",
+    "loading": "url/pic/loading.csv"
   },
   "video": {
     "all": "url/video/all.csv"
