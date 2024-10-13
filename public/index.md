@@ -10,7 +10,8 @@
 | 二次元全部 | [https://random-api.czl.net/pic/ecy](https://random-api.czl.net/pic/ecy) |
 | 二次元1 | [https://random-api.czl.net/pic/ecy1](https://random-api.czl.net/pic/ecy1) |
 | 二次元2 | [https://random-api.czl.net/pic/ecy2](https://random-api.czl.net/pic/ecy2) |
-| 风景横图 | [https://random-api.czl.net/pic/fjht](https://random-api.czl.net/pic/fjht) |
+| 风景 | [https://random-api.czl.net/pic/fj](https://random-api.czl.net/pic/fj) |
+| AI绘图 | [https://random-api.czl.net/pic/ai](https://random-api.czl.net/pic/ai) |
 
 --- 
 
@@ -22,7 +23,7 @@
 
 ## 部署和原理
 
-请见我的帖子：[https://q58.org/questions/D1U1](https://q58.org/questions/D1U1)
+请见我的帖子：[https://q58.org/t/topic/127](https://q58.org/t/topic/127)
 
 ## 讨论
 

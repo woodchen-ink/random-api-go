@@ -1,12 +1,13 @@
 {
   "pic": {
     "all": "url/pic/all.csv",
-    "fjht": "url/pic/fjht.csv",
+    "fj": "url/pic/fj.csv",
     "czlwb": "url/pic/czl-website-background.csv",
     "truegirl": "url/pic/truegirl.csv",
     "ecy": "url/pic/ecy.csv",
     "ecy1": "url/pic/ecy1.csv",
-    "ecy2": "url/pic/ecy2.csv"
+    "ecy2": "url/pic/ecy2.csv",
+    "ai": "url/pic/ai.csv"
   },
   "video": {
     "all": "url/video/all.csv"
