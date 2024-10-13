@@ -34,6 +34,7 @@ type URLSelector struct {
 	URLs         []string
 	CurrentIndex int
 	RecentUsed   map[string]int
+	mu           sync.Mutex
 }
 
 func NewURLSelector(urls []string) *URLSelector {
@@ -52,6 +53,9 @@ func (us *URLSelector) ShuffleURLs() {
 }
 
 func (us *URLSelector) GetRandomURL() string {
+	us.mu.Lock()
+	defer us.mu.Unlock()
+
 	if us.CurrentIndex == 0 {
 		us.ShuffleURLs()
 	}
