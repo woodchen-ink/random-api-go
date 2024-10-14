@@ -8,6 +8,7 @@ import (
 	"math/rand"
 	"net"
 	"net/http"
+	"net/url"
 	"os"
 	"path/filepath"
 	"strings"
@@ -196,11 +197,23 @@ func getCSVContent(path string) (*URLSelector, error) {
 func handleAPIRequest(w http.ResponseWriter, r *http.Request) {
 	start := time.Now()
 	realIP := getRealIP(r)
+	referer := r.Referer()
+
+	// 获取来源域名
+	var sourceDomain string
+	if referer != "" {
+		if parsedURL, err := url.Parse(referer); err == nil {
+			sourceDomain = parsedURL.Hostname()
+		}
+	}
+	if sourceDomain == "" {
+		sourceDomain = "direct"
+	}
 
 	if time.Since(lastFetchTime) > cacheDuration {
 		if err := loadCSVPaths(); err != nil {
 			http.Error(w, "Failed to load CSV paths", http.StatusInternalServerError)
-			log.Println("Error loading CSV paths:", err)
+			log.Printf("Error loading CSV paths: %v", err)
 			return
 		}
 	}
@@ -228,7 +241,7 @@ func handleAPIRequest(w http.ResponseWriter, r *http.Request) {
 	selector, err := getCSVContent(csvPath)
 	if err != nil {
 		http.Error(w, "Failed to fetch CSV content", http.StatusInternalServerError)
-		log.Println("Error fetching CSV content:", err)
+		log.Printf("Error fetching CSV content: %v", err)
 		return
 	}
 
@@ -240,8 +253,8 @@ func handleAPIRequest(w http.ResponseWriter, r *http.Request) {
 	randomURL := selector.GetRandomURL()
 
 	duration := time.Since(start)
-	log.Printf("Request: %s %s from %s - Duration: %v - Redirecting to: %s\n",
-		r.Method, r.URL.Path, realIP, duration, randomURL)
+	log.Printf("Request: %s %s from %s - Source: %s - Duration: %v - Redirecting to: %s",
+		r.Method, r.URL.Path, realIP, sourceDomain, duration, randomURL)
 
 	http.Redirect(w, r, randomURL, http.StatusFound)
 }
