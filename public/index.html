@@ -1,12 +1,13 @@
 <!DOCTYPE html>
-<html lang="zh-cmn-Hans" class="mdui-theme-dark">
+<html lang="zh-cmn-Hans">
 
 <head>
     <title>随机文件api</title>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <link rel="shortcut icon" size="32x32" href="https://cdn-r2.czl.net/2023/06/20/649168ebc2b5d.png">
-    <link rel="stylesheet"  href="https://cdn-r2.czl.net/frame/czlfonts/slice/font.css" media="all">
+    <link rel="stylesheet" href="https://cdn-r2.czl.net/frame/czlfonts/slice/font.css" media="all">
+    <link rel="stylesheet" href="https://cdn-r2.czl.net/frame/prose.css" media="all">
     <style>
         html,
         body {
@@ -16,7 +17,6 @@
             background-image: url(https://random-api.czl.net/pic/all);
             background-size: cover;
             overflow: auto;
-            /* 确保页面可以滚动 */
         }
 
         .overlay {
@@ -27,81 +27,43 @@
             height: 100%;
             background-color: rgba(0, 0, 0, 0.8);
             z-index: 2;
-            /* 确保其位于内容之上 */
             overflow-y: auto;
-            /* 允许蒙版内部滚动 */
         }
 
         #markdown-content {
             position: relative;
             z-index: 3;
-            /* 确保内容可以被访问和滚动 */
             background-color: transparent;
-            /* 可选，视你的需求而定 */
+            padding: 20px;
+            max-width: 800px;
+            margin: 0 auto;
         }
-
 
         * {
             box-sizing: border-box;
         }
 
-        #scroll-down {
-            background-color: transparent;
-            margin-top: 2rem;
-            width: 2rem;
-            height: 2rem;
-            border-radius: 50%;
-            border: 2px solid #424242;
-            cursor: pointer;
-            animation: bounce 2s infinite 2s;
-        }
-
-        #scroll-down::before {
-            display: block;
-            content: "";
-            transform: rotate(-45deg) translate(0.15rem, 0.15rem);
-            width: 0.4rem;
-            height: 0.4rem;
-            border: 2px solid #424242;
-            border-width: 0px 0 2px 2px;
-        }
-
         main {
             padding: 1vw;
-        }
-
-        section {
-            padding: 1rem;
-        }
-
-        section {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            /* height: 100vh; */
-            /* 使section占据整个视窗高度，你可以根据需要调整这个值 */
+            max-width: 1000px;
+            margin-left: auto;
+            margin-right: auto;
         }
 
         img {
-            width: 150px;
-            height: 200px;
-            object-fit: cover;
+            max-width: 100%;
+            height: auto;
         }
     </style>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/mdui/2.1.1/mdui.min.css">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/mdui/2.1.1/mdui.global.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/markdown-it/13.0.2/markdown-it.min.js"></script>
 </head>
 
-<body class="mdui-prose">
+<body>
     <div class="overlay">
-        <mdui-layout>
-            <main style="margin:20px auto;">
-                <div id="markdown-content">
-                </div>
-            </main>
-        </mdui-layout>
+        <main>
+            <div id="markdown-content" class="prose prose-dark">
+            </div>
+        </main>
     </div>
     <!-- 渲染markdown -->
     <script>
