@@ -1,12 +1,14 @@
 # Random-Api 随机文件API
 
-## 接口统计
+## 统计
 <div class="stats-container">
     <div id="stats-summary"></div>
     <div id="stats-detail"></div>
 </div>
 
-## 图片接口
+--- 
+
+## 图片接口说明
 
 | 种类     | 请求地址   | 
 | ---------- | ---------------- | 
@@ -19,9 +21,9 @@
 | AI绘图 | [https://random-api.czl.net/pic/ai](https://random-api.czl.net/pic/ai) |
 | 加载 | [https://random-api.czl.net/pic/loading](https://random-api.czl.net/pic/loading) |
 
---- 
 
-## 视频接口
+
+## 视频接口说明
 | 种类     | 请求地址   | 
 | ---------- | ---------------- | 
 | 所有 | [https://random-api.czl.net/video/all](https://random-api.czl.net/video/all) |

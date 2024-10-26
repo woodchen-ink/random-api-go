@@ -85,7 +85,12 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 10px;
+            margin: 0 0 10px 0;
+        }
+
+        .stats-header h3 {
+            margin: 0;
+            padding: 0;
         }
 
         .refresh-icon {
@@ -190,7 +195,7 @@
             const summaryHtml = `
                 <div class="stats-summary">
                     <div class="stats-header">
-                        <h3>📊 接口调用统计 <span class="refresh-icon">🔄</span></h3>
+                        <h3>📊 接口调用次数 <span class="refresh-icon">🔄</span></h3>
                     </div>
                     <div class="stats-grid">
                         <div class="stats-item">今日总调用：${todayCalls} 次</div>
