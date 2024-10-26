@@ -11,6 +11,7 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
+	"random-api-go/stats"
 	"strings"
 	"sync"
 	"time"
@@ -30,6 +31,8 @@ var (
 	mu            sync.RWMutex
 	rng           *rand.Rand
 )
+
+var statsManager *stats.StatsManager
 
 type URLSelector struct {
 	URLs         []string
@@ -80,11 +83,19 @@ func (us *URLSelector) GetRandomURL() string {
 	return us.URLs[0]
 }
 
+func init() {
+	// 确保数据目录存在
+	if err := os.MkdirAll("data", 0755); err != nil {
+		log.Fatal("Failed to create data directory:", err)
+	}
+}
+
 func main() {
 	source := rand.NewSource(time.Now().UnixNano())
 	rng = rand.New(source)
 
 	setupLogging()
+	statsManager = stats.NewStatsManager("data/stats.json")
 
 	if err := loadCSVPaths(); err != nil {
 		log.Fatal("Failed to load CSV paths:", err)
@@ -97,6 +108,8 @@ func main() {
 	// 设置 API 路由
 	http.HandleFunc("/pic/", handleAPIRequest)
 	http.HandleFunc("/video/", handleAPIRequest)
+	// 添加统计API路由
+	http.HandleFunc("/stats", handleStats)
 
 	log.Printf("Listening on %s...\n", port)
 	if err := http.ListenAndServe(port, nil); err != nil {
@@ -252,9 +265,18 @@ func handleAPIRequest(w http.ResponseWriter, r *http.Request) {
 
 	randomURL := selector.GetRandomURL()
 
+	// 记录统计
+	endpoint := fmt.Sprintf("%s/%s", prefix, suffix)
+	statsManager.IncrementCalls(endpoint)
+
 	duration := time.Since(start)
 	log.Printf("Request: %s %s from %s - Source: %s - Duration: %v - Redirecting to: %s",
 		r.Method, r.URL.Path, realIP, sourceDomain, duration, randomURL)
 
 	http.Redirect(w, r, randomURL, http.StatusFound)
+}
+
+func handleStats(w http.ResponseWriter, r *http.Request) {
+	stats := statsManager.GetStats()
+	json.NewEncoder(w).Encode(stats)
 }
