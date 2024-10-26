@@ -1,5 +1,11 @@
 # Random-Api 随机文件API
 
+## 接口统计
+<div id="stats-summary"></div>
+
+## 详细统计
+<div id="stats-detail"></div>
+
 ## 图片接口
 
 | 种类     | 请求地址   | 

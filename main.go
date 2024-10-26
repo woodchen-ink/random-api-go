@@ -180,11 +180,11 @@ func getCSVContent(path string) (*URLSelector, error) {
 	}
 
 	fullPath := filepath.Join("public", path)
-	log.Printf("Attempting to read file: %s", fullPath)
+	log.Printf("尝试读取文件: %s", fullPath)
 
 	fileContent, err := os.ReadFile(fullPath)
 	if err != nil {
-		return nil, fmt.Errorf("error reading CSV content: %w", err)
+		return nil, fmt.Errorf("读取 CSV 内容时出错: %w", err)
 	}
 
 	lines := strings.Split(string(fileContent), "\n")
@@ -225,8 +225,8 @@ func handleAPIRequest(w http.ResponseWriter, r *http.Request) {
 
 	if time.Since(lastFetchTime) > cacheDuration {
 		if err := loadCSVPaths(); err != nil {
-			http.Error(w, "Failed to load CSV paths", http.StatusInternalServerError)
-			log.Printf("Error loading CSV paths: %v", err)
+			http.Error(w, "无法加载 CSV 路径", http.StatusInternalServerError)
+			log.Printf("加载 CSV 路径时出错: %v", err)
 			return
 		}
 	}
@@ -253,13 +253,13 @@ func handleAPIRequest(w http.ResponseWriter, r *http.Request) {
 
 	selector, err := getCSVContent(csvPath)
 	if err != nil {
-		http.Error(w, "Failed to fetch CSV content", http.StatusInternalServerError)
-		log.Printf("Error fetching CSV content: %v", err)
+		http.Error(w, "无法获取 CSV 内容", http.StatusInternalServerError)
+		log.Printf("获取 CSV 内容时出错: %v", err)
 		return
 	}
 
 	if len(selector.URLs) == 0 {
-		http.Error(w, "No content available", http.StatusNotFound)
+		http.Error(w, "无可用内容", http.StatusNotFound)
 		return
 	}
 
@@ -270,7 +270,7 @@ func handleAPIRequest(w http.ResponseWriter, r *http.Request) {
 	statsManager.IncrementCalls(endpoint)
 
 	duration := time.Since(start)
-	log.Printf("Request: %s %s from %s - Source: %s - Duration: %v - Redirecting to: %s",
+	log.Printf("请求：%s %s，来自 %s -来源：%s -持续时间：%v -重定向至：%s",
 		r.Method, r.URL.Path, realIP, sourceDomain, duration, randomURL)
 
 	http.Redirect(w, r, randomURL, http.StatusFound)

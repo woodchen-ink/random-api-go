@@ -54,6 +54,32 @@
             max-width: 100%;
             height: auto;
         }
+
+        .stats-summary {
+            background-color: #f5f5f5;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            /* 两列布局 */
+            gap: 10px;
+            /* 项目之间的间距 */
+        }
+
+        .stats-item {
+            padding: 5px;
+        }
+
+        /* 确保在小屏幕上切换为单列 */
+        @media (max-width: 600px) {
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+        }
     </style>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/markdown-it/13.0.2/markdown-it.min.js"></script>
 </head>
@@ -71,6 +97,81 @@
         var md = window.markdownit({
             html: true
         });
+
+        // 加载统计数据
+        async function loadStats() {
+            try {
+                const response = await fetch('/stats');
+                const stats = await response.json();
+                updateStats(stats);
+            } catch (error) {
+                console.error('Error loading stats:', error);
+            }
+        }
+
+        // 处理统计数据
+        function updateStats(stats) {
+            const startDate = new Date('2024-10-26');
+            const today = new Date();
+            const daysSinceStart = Math.ceil((today - startDate) / (1000 * 60 * 60 * 24));
+
+            let totalCalls = 0;
+            let todayCalls = 0;
+
+            Object.values(stats).forEach(stat => {
+                totalCalls += stat.total_calls;
+                todayCalls += stat.today_calls;
+            });
+
+            const avgCallsPerDay = Math.round(totalCalls / daysSinceStart);
+
+            // 更新总体统计
+            const summaryHtml = `
+                <div class="stats-summary">
+                    <p>📊 <strong>接口调用统计</strong></p>
+                    <div class="stats-grid">
+                        <div class="stats-item">今日总调用：${todayCalls} 次</div>
+                        <div class="stats-item">平均每天调用：${avgCallsPerDay} 次</div>
+                        <div class="stats-item">总调用次数：${totalCalls} 次</div>
+                        <div class="stats-item">统计开始日期：2024-10-26</div>
+                    </div>
+                </div>
+            `;
+
+            // 更新详细统计
+            let detailHtml = `
+            <div class="prose">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>接口</th>
+                            <th>今日调用</th>
+                            <th>总调用</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+
+            Object.entries(stats).forEach(([endpoint, stat]) => {
+                detailHtml += `
+                    <tr>
+                        <td>${endpoint}</td>
+                        <td>${stat.today_calls}</td>
+                        <td>${stat.total_calls}</td>
+                    </tr>
+                `;
+            });
+
+            detailHtml += `
+                    </tbody>
+                </table>
+                </div>
+            `;
+
+            // 插入统计数据
+            document.getElementById('stats-summary').innerHTML = summaryHtml;
+            document.getElementById('stats-detail').innerHTML = detailHtml;
+        }
 
         // 异步加载 index.md 文件内容
         fetch('./index.md')
