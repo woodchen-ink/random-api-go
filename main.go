@@ -10,10 +10,12 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"os/signal"
 	"path/filepath"
 	"random-api-go/stats"
 	"strings"
 	"sync"
+	"syscall"
 	"time"
 )
 
@@ -30,9 +32,8 @@ var (
 	csvCache      = make(map[string]*URLSelector)
 	mu            sync.RWMutex
 	rng           *rand.Rand
+	statsManager  *stats.StatsManager
 )
-
-var statsManager *stats.StatsManager
 
 type URLSelector struct {
 	URLs         []string
@@ -95,7 +96,22 @@ func main() {
 	rng = rand.New(source)
 
 	setupLogging()
-	statsManager = stats.NewStatsManager("data/stats.json")
+	statsManager = stats.NewStatsManager("stats.json")
+
+	// 设置优雅关闭
+	c := make(chan os.Signal, 1)
+	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
+
+	go func() {
+		<-c
+		log.Println("Server is shutting down...")
+
+		// 关闭统计管理器,确保统计数据被保存
+		statsManager.Shutdown()
+		log.Println("Stats manager shutdown completed")
+
+		os.Exit(0)
+	}()
 
 	if err := loadCSVPaths(); err != nil {
 		log.Fatal("Failed to load CSV paths:", err)
@@ -108,10 +124,9 @@ func main() {
 	// 设置 API 路由
 	http.HandleFunc("/pic/", handleAPIRequest)
 	http.HandleFunc("/video/", handleAPIRequest)
-	// 添加统计API路由
 	http.HandleFunc("/stats", handleStats)
 
-	log.Printf("Listening on %s...\n", port)
+	log.Printf("Server starting on %s...\n", port)
 	if err := http.ListenAndServe(port, nil); err != nil {
 		log.Fatal(err)
 	}
@@ -276,7 +291,12 @@ func handleAPIRequest(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, randomURL, http.StatusFound)
 }
 
+// 统计API处理函数
 func handleStats(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
 	stats := statsManager.GetStats()
-	json.NewEncoder(w).Encode(stats)
+	if err := json.NewEncoder(w).Encode(stats); err != nil {
+		http.Error(w, "Error encoding stats", http.StatusInternalServerError)
+		log.Printf("Error encoding stats: %v", err)
+	}
 }
