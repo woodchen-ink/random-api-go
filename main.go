@@ -23,7 +23,6 @@ import (
 const (
 	port           = ":5003"
 	requestTimeout = 10 * time.Second
-	noRepeatCount  = 3 // 在这个次数内不重复选择
 	envBaseURL     = "BASE_URL"
 )
 
@@ -36,17 +35,13 @@ var (
 )
 
 type URLSelector struct {
-	URLs         []string
-	CurrentIndex int
-	RecentUsed   map[string]int
-	mu           sync.Mutex
+	URLs []string
+	mu   sync.Mutex
 }
 
 func NewURLSelector(urls []string) *URLSelector {
 	return &URLSelector{
-		URLs:         urls,
-		CurrentIndex: 0,
-		RecentUsed:   make(map[string]int),
+		URLs: urls,
 	}
 }
 
@@ -61,27 +56,10 @@ func (us *URLSelector) GetRandomURL() string {
 	us.mu.Lock()
 	defer us.mu.Unlock()
 
-	if us.CurrentIndex == 0 {
-		us.ShuffleURLs()
+	if len(us.URLs) == 0 {
+		return ""
 	}
-
-	for i := 0; i < len(us.URLs); i++ {
-		url := us.URLs[us.CurrentIndex]
-		us.CurrentIndex = (us.CurrentIndex + 1) % len(us.URLs)
-
-		if us.RecentUsed[url] < noRepeatCount {
-			us.RecentUsed[url]++
-			// 如果某个URL使用次数达到上限，从RecentUsed中移除
-			if us.RecentUsed[url] == noRepeatCount {
-				delete(us.RecentUsed, url)
-			}
-			return url
-		}
-	}
-
-	// 如果所有URL都被最近使用过，重置RecentUsed并返回第一个URL
-	us.RecentUsed = make(map[string]int)
-	return us.URLs[0]
+	return us.URLs[rng.Intn(len(us.URLs))]
 }
 
 func init() {
