@@ -8,120 +8,9 @@
     <link rel="shortcut icon" size="32x32" href="https://cdn-r2.czl.net/2023/06/20/649168ebc2b5d.png">
     <link rel="stylesheet" href="https://cdn-r2.czl.net/frame/czlfonts/slice/font.css" media="all">
     <link rel="stylesheet" href="https://cdn-r2.czl.net/frame/prose.css" media="all">
+    <link rel="stylesheet" href="./css/main.css" media="all">
     <style>
-        html,
-        body {
-            height: 100%;
-            margin: 0;
-            font-weight: 300;
-            background-image: url(https://random-api.czl.net/pic/all);
-            background-size: cover;
-            overflow: auto;
-        }
 
-        .overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(0, 0, 0, 0.8);
-            z-index: 2;
-            overflow-y: auto;
-        }
-
-        #markdown-content {
-            position: relative;
-            z-index: 3;
-            background-color: transparent;
-            padding: 20px;
-            max-width: 800px;
-            margin: 0 auto;
-        }
-
-        * {
-            box-sizing: border-box;
-        }
-
-        main {
-            padding: 1vw;
-            max-width: 1000px;
-            margin-left: auto;
-            margin-right: auto;
-        }
-
-        img {
-            max-width: 100%;
-            height: auto;
-        }
-
-        .stats-summary {
-            background-color: #44444423;
-            padding: 15px;
-            border-radius: 8px;
-            margin: 20px 0;
-        }
-
-        .stats-grid {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            /* 两列布局 */
-            gap: 10px;
-            /* 项目之间的间距 */
-        }
-
-        .stats-item {
-            padding: 5px;
-        }
-
-        /* 确保在小屏幕上切换为单列 */
-        @media (max-width: 600px) {
-            .stats-grid {
-                grid-template-columns: 1fr;
-            }
-        }
-
-        .stats-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin: 0 0 10px 0;
-        }
-
-        .stats-header h3 {
-            margin: 0;
-            padding: 0;
-        }
-
-        .refresh-icon {
-            font-size: 16px;
-            margin-left: 10px;
-            display: inline-block;
-            animation: none;
-        }
-
-        @keyframes spin {
-            from {
-                transform: rotate(0deg);
-            }
-
-            to {
-                transform: rotate(360deg);
-            }
-        }
-
-        .spinning {
-            animation: spin 1s linear infinite;
-        }
-
-        .stats-summary,
-        table {
-            transition: opacity 0.3s ease;
-        }
-
-        .fade {
-            opacity: 0.6;
-        }
     </style>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/markdown-it/13.0.2/markdown-it.min.js"></script>
 </head>
@@ -139,6 +28,61 @@
         var md = window.markdownit({
             html: true
         });
+        // 统一配置对象
+        const endpointConfig = {
+            'pic/all': {
+                name: '全部图片',
+                order: 1
+            },
+            'pic/ai': {
+                name: 'AI绘图',
+                order: 2
+            },
+            'pic/ecy': {
+                name: '二次元(ALL)',
+                order: 3
+            },
+            'pic/ecy1': {
+                name: '二次元文件1',
+                order: 4
+            },
+            'pic/ecy2': {
+                name: '二次元文件2',
+                order: 5
+            },
+            'pic/truegirl': {
+                name: '真人美女(ALL)',
+                order: 6
+            },
+            'pic/truegirl1': {
+                name: '真人美女文件1',
+                order: 7
+            },
+            'pic/truegirl2': {
+                name: '真人美女文件2',
+                order: 8
+            },
+            'pic/fj': {
+                name: '风景',
+                order: 9
+            },
+            'pic/czlwb': {
+                name: 'CZL网站背景图',
+                order: 10
+            },
+            'pic/girl-gif': {
+                name: '真人美女动图',
+                order: 11
+            },
+            'pic/loading': {
+                name: '加载图',
+                order: 12
+            },
+            'video/all': {
+                name: '视频',
+                order: 13
+            }
+        };
 
         // 加载统计数据
         async function loadStats() {
@@ -155,7 +99,7 @@
                 if (detailElement) detailElement.classList.add('fade');
 
                 // 获取数据
-                const response = await fetch('/stats');
+                const response = await fetch('https://random-api.czl.net/stats');
                 const stats = await response.json();
 
                 // 更新统计
@@ -190,12 +134,19 @@
             });
 
             const avgCallsPerDay = Math.round(totalCalls / daysSinceStart);
+            // 获取所有endpoints并按order排序
+            const sortedEndpoints = Object.entries(stats)
+                .sort(([endpointA], [endpointB]) => {
+                    const orderA = endpointConfig[endpointA]?.order || 999;
+                    const orderB = endpointConfig[endpointB]?.order || 999;
+                    return orderA - orderB;
+                });
 
             // 更新总体统计
             const summaryHtml = `
                 <div class="stats-summary">
                     <div class="stats-header">
-                        <h3>📊 接口调用次数 <span class="refresh-icon">🔄</span></h3>
+                        <h2>📊 接口调用次数 <span class="refresh-icon">🔄</span></h2>
                     </div>
                     <div class="stats-grid">
                         <div class="stats-item">今日总调用：${todayCalls} 次</div>
@@ -219,10 +170,17 @@
                     <tbody>
             `;
 
-            Object.entries(stats).forEach(([endpoint, stat]) => {
+            sortedEndpoints.forEach(([endpoint, stat]) => {
                 detailHtml += `
                     <tr>
-                        <td>${endpoint}</td>
+                        <td>
+                            <a href="javascript:void(0)" 
+                            onclick="copyToClipboard('${endpoint}')"
+                            class="endpoint-link" 
+                            title="点击复制链接">
+                                ${getDisplayName(endpoint)}
+                            </a>
+                        </td>
                         <td>${stat.today_calls}</td>
                         <td>${stat.total_calls}</td>
                     </tr>
@@ -240,6 +198,31 @@
 
             if (summaryElement) summaryElement.innerHTML = summaryHtml;
             if (detailElement) detailElement.innerHTML = detailHtml;
+        }
+
+        // 获取显示名称的函数
+        function getDisplayName(endpoint) {
+            return endpointConfig[endpoint]?.name || endpoint;
+        }
+
+
+        // 添加复制功能
+        function copyToClipboard(endpoint) {
+            const url = `https://random-api.czl.net/${endpoint}`;
+            navigator.clipboard.writeText(url).then(() => {
+                // 显示提示
+                const toast = document.createElement('div');
+                toast.className = 'toast';
+                toast.textContent = '链接已复制到剪贴板！';
+                document.body.appendChild(toast);
+
+                // 2秒后移除提示
+                setTimeout(() => {
+                    toast.remove();
+                }, 2000);
+            }).catch(err => {
+                console.error('复制失败:', err);
+            });
         }
 
         // 先加载 markdown 内容

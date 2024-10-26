@@ -1,32 +1,11 @@
 # Random-Api 随机文件API
 
-## 统计
 <div class="stats-container">
     <div id="stats-summary"></div>
     <div id="stats-detail"></div>
 </div>
 
 --- 
-
-## 图片接口说明
-
-| 种类     | 请求地址   | 
-| ---------- | ---------------- | 
-| 所有     | [https://random-api.czl.net/pic/all](https://random-api.czl.net/pic/all) |
-| CZL网站背景 | [https://random-api.czl.net/pic/czlwb](https://random-api.czl.net/pic/czlwb) |
-| 真人美女 | [https://random-api.czl.net/pic/truegirl](https://random-api.czl.net/pic/truegirl) |
-| 女孩动态图 | [https://random-api.czl.net/pic/girl-gif](https://random-api.czl.net/pic/girl-gif) |
-| 二次元 | [https://random-api.czl.net/pic/ecy](https://random-api.czl.net/pic/ecy) |
-| 风景 | [https://random-api.czl.net/pic/fj](https://random-api.czl.net/pic/fj) |
-| AI绘图 | [https://random-api.czl.net/pic/ai](https://random-api.czl.net/pic/ai) |
-| 加载 | [https://random-api.czl.net/pic/loading](https://random-api.czl.net/pic/loading) |
-
-
-
-## 视频接口说明
-| 种类     | 请求地址   | 
-| ---------- | ---------------- | 
-| 所有 | [https://random-api.czl.net/video/all](https://random-api.czl.net/video/all) |
 
 
 ## 部署和原理

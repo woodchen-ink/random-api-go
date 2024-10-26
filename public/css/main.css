@@ -1,0 +1,175 @@
+html,
+body {
+  height: 100%;
+  margin: 0;
+  font-weight: 300;
+  background-image: url(https://random-api.czl.net/pic/all);
+  background-size: cover;
+  overflow: auto;
+}
+
+.overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.8);
+  z-index: 2;
+  overflow-y: auto;
+}
+
+#markdown-content {
+  position: relative;
+  z-index: 3;
+  background-color: transparent;
+  padding: 20px;
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+main {
+  padding: 1vw;
+  max-width: 1000px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+img {
+  max-width: 100%;
+  height: auto;
+}
+
+.stats-summary {
+  background-color: #44444423;
+  padding: 15px;
+  border-radius: 8px;
+  margin: 20px 0;
+}
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  /* 两列布局 */
+  gap: 10px;
+  /* 项目之间的间距 */
+}
+
+.stats-item {
+  padding: 5px;
+}
+
+/* 确保在小屏幕上切换为单列 */
+@media (max-width: 600px) {
+  .stats-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.stats-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin: 0 0 10px 0;
+}
+
+.stats-header h2 {
+  margin: 0;
+  padding: 0;
+}
+
+.refresh-icon {
+  font-size: 16px;
+  margin-left: 10px;
+  display: inline-block;
+  animation: none;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.spinning {
+  animation: spin 1s linear infinite;
+}
+
+.stats-summary,
+table {
+  transition: opacity 0.3s ease;
+}
+
+.fade {
+  opacity: 0.6;
+}
+
+.endpoint-link {
+  /* color: #666; 默认字体颜色改为深灰色 */
+  text-decoration: none;
+  cursor: pointer;
+  padding: 2px 8px; /* 稍微增加内边距 */
+  border-radius: 4px;
+  transition: all 0.3s ease; /* 平滑过渡效果 */
+  display: inline-block; /* 使padding生效 */
+  font-weight: 500; /* 稍微加粗 */
+}
+
+.endpoint-link:hover {
+  background-color: #2196f3; /* 鼠标悬停时的背景色改为蓝色 */
+  color: white; /* 鼠标悬停时文字变为白色 */
+  transform: translateY(-1px); /* 轻微上浮效果 */
+  box-shadow: 0 2px 4px rgba(33, 150, 243, 0.2); /* 添加阴影效果 */
+}
+
+/* 点击时的效果 */
+.endpoint-link:active {
+  transform: translateY(0);
+  box-shadow: none;
+}
+
+/* 提示框样式也稍作优化 */
+.toast {
+  position: fixed;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  background-color: #2196f3; /* 改为蓝色背景 */
+  color: white;
+  padding: 12px 24px;
+  border-radius: 4px;
+  z-index: 1000;
+  animation: fadeInOut 2s ease;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  font-weight: 500;
+}
+
+@keyframes fadeInOut {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, 20px);
+  }
+
+  15% {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+
+  85% {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -20px);
+  }
+}
