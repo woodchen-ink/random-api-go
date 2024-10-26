@@ -56,7 +56,7 @@
         }
 
         .stats-summary {
-            background-color: #f5f5f5;
+            background-color: #44444423;
             padding: 15px;
             border-radius: 8px;
             margin: 20px 0;
@@ -80,6 +80,43 @@
                 grid-template-columns: 1fr;
             }
         }
+
+        .stats-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .refresh-icon {
+            font-size: 16px;
+            margin-left: 10px;
+            display: inline-block;
+            animation: none;
+        }
+
+        @keyframes spin {
+            from {
+                transform: rotate(0deg);
+            }
+
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        .spinning {
+            animation: spin 1s linear infinite;
+        }
+
+        .stats-summary,
+        table {
+            transition: opacity 0.3s ease;
+        }
+
+        .fade {
+            opacity: 0.6;
+        }
     </style>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/markdown-it/13.0.2/markdown-it.min.js"></script>
 </head>
@@ -101,9 +138,33 @@
         // 加载统计数据
         async function loadStats() {
             try {
+                // 添加刷新动画
+                const refreshIcon = document.querySelector('.refresh-icon');
+                const summaryElement = document.getElementById('stats-summary');
+                const detailElement = document.getElementById('stats-detail');
+
+                if (refreshIcon) {
+                    refreshIcon.classList.add('spinning');
+                }
+                if (summaryElement) summaryElement.classList.add('fade');
+                if (detailElement) detailElement.classList.add('fade');
+
+                // 获取数据
                 const response = await fetch('/stats');
                 const stats = await response.json();
-                updateStats(stats);
+
+                // 更新统计
+                await updateStats(stats);
+
+                // 移除动画
+                setTimeout(() => {
+                    if (refreshIcon) {
+                        refreshIcon.classList.remove('spinning');
+                    }
+                    if (summaryElement) summaryElement.classList.remove('fade');
+                    if (detailElement) detailElement.classList.remove('fade');
+                }, 300);
+
             } catch (error) {
                 console.error('Error loading stats:', error);
             }
@@ -128,7 +189,9 @@
             // 更新总体统计
             const summaryHtml = `
                 <div class="stats-summary">
-                    <p>📊 <strong>接口调用统计</strong></p>
+                    <div class="stats-header">
+                        <h3>📊 接口调用统计 <span class="refresh-icon">🔄</span></h3>
+                    </div>
                     <div class="stats-grid">
                         <div class="stats-item">今日总调用：${todayCalls} 次</div>
                         <div class="stats-item">平均每天调用：${avgCallsPerDay} 次</div>
@@ -140,7 +203,6 @@
 
             // 更新详细统计
             let detailHtml = `
-            <div class="prose">
                 <table>
                     <thead>
                         <tr>
@@ -165,22 +227,28 @@
             detailHtml += `
                     </tbody>
                 </table>
-                </div>
             `;
 
             // 插入统计数据
-            document.getElementById('stats-summary').innerHTML = summaryHtml;
-            document.getElementById('stats-detail').innerHTML = detailHtml;
+            const summaryElement = document.getElementById('stats-summary');
+            const detailElement = document.getElementById('stats-detail');
+
+            if (summaryElement) summaryElement.innerHTML = summaryHtml;
+            if (detailElement) detailElement.innerHTML = detailHtml;
         }
 
-        // 异步加载 index.md 文件内容
+        // 先加载 markdown 内容
         fetch('./index.md')
             .then(response => response.text())
             .then(markdownText => {
-                // 渲染 Markdown 内容
                 document.getElementById('markdown-content').innerHTML = md.render(markdownText);
+                // markdown 加载完成后等待一小段时间再加载统计数据
+                setTimeout(loadStats, 100);
             })
             .catch(error => console.error('Error loading index.md:', error));
+
+        // 定期更新统计数据
+        setInterval(loadStats, 3 * 1000);
     </script>
 </body>
 

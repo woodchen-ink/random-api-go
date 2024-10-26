@@ -1,10 +1,10 @@
 # Random-Api 随机文件API
 
 ## 接口统计
-<div id="stats-summary"></div>
-
-## 详细统计
-<div id="stats-detail"></div>
+<div class="stats-container">
+    <div id="stats-summary"></div>
+    <div id="stats-detail"></div>
+</div>
 
 ## 图片接口
 
