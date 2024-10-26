@@ -24,7 +24,7 @@ const (
 	port           = ":5003"
 	requestTimeout = 10 * time.Second
 	noRepeatCount  = 3 // 在这个次数内不重复选择
-	envCSVBaseURL  = "CSV_BASE_URL"
+	envBaseURL     = "BASE_URL"
 )
 
 var (
@@ -133,12 +133,51 @@ func main() {
 }
 
 func loadCSVPaths() error {
-	jsonPath := filepath.Join("public", "url.json")
-	log.Printf("Attempting to read file: %s", jsonPath)
+	var data []byte
+	var err error
 
-	data, err := os.ReadFile(jsonPath)
-	if err != nil {
-		return fmt.Errorf("failed to read url.json: %w", err)
+	// 获取环境变量中的基础URL
+	baseURL := os.Getenv(envBaseURL)
+
+	if baseURL != "" {
+		// 构建完整的URL
+		var fullURL string
+		if strings.HasPrefix(baseURL, "http://") || strings.HasPrefix(baseURL, "https://") {
+			fullURL = utils.JoinURLPath(baseURL, "url.json")
+		} else {
+			fullURL = "https://" + utils.JoinURLPath(baseURL, "url.json")
+		}
+
+		log.Printf("Attempting to read url.json from: %s", fullURL)
+
+		// 创建HTTP客户端
+		client := &http.Client{
+			Timeout: requestTimeout,
+		}
+
+		resp, err := client.Get(fullURL)
+		if err != nil {
+			return fmt.Errorf("failed to fetch url.json: %w", err)
+		}
+		defer resp.Body.Close()
+
+		if resp.StatusCode != http.StatusOK {
+			return fmt.Errorf("failed to fetch url.json, status code: %d", resp.StatusCode)
+		}
+
+		data, err = io.ReadAll(resp.Body)
+		if err != nil {
+			return fmt.Errorf("failed to read url.json response: %w", err)
+		}
+	} else {
+		// 从本地文件读取
+		jsonPath := filepath.Join("public", "url.json")
+		log.Printf("Attempting to read local file: %s", jsonPath)
+
+		data, err = os.ReadFile(jsonPath)
+		if err != nil {
+			return fmt.Errorf("failed to read local url.json: %w", err)
+		}
 	}
 
 	var result map[string]map[string]string
@@ -166,7 +205,7 @@ func getCSVContent(path string) (*URLSelector, error) {
 	var err error
 
 	// 获取环境变量中的基础URL
-	baseURL := os.Getenv(envCSVBaseURL)
+	baseURL := os.Getenv(envBaseURL)
 
 	if baseURL != "" {
 		// 如果设置了基础URL，构建完整的URL
