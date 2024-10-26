@@ -39,6 +39,18 @@ jobs:
           tags: woodchen/${{ env.IMAGE_NAME }}:latest
           platforms: linux/amd64,linux/arm64
 
+      - name: Create artifact
+        run: |
+          zip -r public.zip public
+
+      - name: Deploy public directory to server
+        uses: appleboy/scp-action@master
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: root
+          key: ${{ secrets.SERVER_SSH_KEY }}
+          source: "public.zip"
+          target: "/tmp"
 
       - name: Execute deployment commands
         uses: appleboy/ssh-action@master
@@ -47,6 +59,22 @@ jobs:
           username: root
           key: ${{ secrets.SERVER_SSH_KEY }}
           script: |
+            # 解压文件
+            unzip -o /tmp/public.zip -d /tmp/public_temp
+
+            # 删除目标目录中的现有文件
+            rm -rf /opt/1panel/docker/compose/random-api-go/public/*
+
+            # 移动新文件到目标目录
+            mv -f /tmp/public_temp/public/* /opt/1panel/docker/compose/random-api-go/public/
+
+            # 设置目录及其子文件的所有权和权限
+            chmod -R 0755 /opt/1panel/docker/compose/random-api-go/public
+
+            # 清理临时文件
+            rm /tmp/public.zip
+            rm -rf /tmp/public_temp
+
             # 拉取镜像
             docker pull woodchen/random-api-go:latest
 
