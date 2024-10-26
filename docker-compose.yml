@@ -10,4 +10,5 @@ services:
       - ./data:/root/data
     environment:
       - TZ=Asia/Shanghai
+      - CSV_BASE_URL=https://example.com/csvfile
     restart: unless-stopped

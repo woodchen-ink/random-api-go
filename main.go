@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"io"
 	"log"
 	"math/rand"
 	"net/http"
@@ -23,6 +24,7 @@ const (
 	port           = ":5003"
 	requestTimeout = 10 * time.Second
 	noRepeatCount  = 3 // 在这个次数内不重复选择
+	envCSVBaseURL  = "CSV_BASE_URL"
 )
 
 var (
@@ -160,12 +162,53 @@ func getCSVContent(path string) (*URLSelector, error) {
 		return selector, nil
 	}
 
-	fullPath := filepath.Join("public", path)
-	log.Printf("尝试读取文件: %s", fullPath)
+	var fileContent []byte
+	var err error
 
-	fileContent, err := os.ReadFile(fullPath)
-	if err != nil {
-		return nil, fmt.Errorf("读取 CSV 内容时出错: %w", err)
+	// 获取环境变量中的基础URL
+	baseURL := os.Getenv(envCSVBaseURL)
+
+	if baseURL != "" {
+		// 如果设置了基础URL，构建完整的URL
+		var fullURL string
+		if strings.HasPrefix(baseURL, "http://") || strings.HasPrefix(baseURL, "https://") {
+			// 如果baseURL已经包含协议,直接使用
+			fullURL = utils.JoinURLPath(baseURL, path)
+		} else {
+			// 如果没有协议,添加https://
+			fullURL = "https://" + utils.JoinURLPath(baseURL, path)
+		}
+
+		log.Printf("尝试从URL获取: %s", fullURL)
+
+		// 创建HTTP客户端
+		client := &http.Client{
+			Timeout: requestTimeout,
+		}
+
+		resp, err := client.Get(fullURL)
+		if err != nil {
+			return nil, fmt.Errorf("HTTP请求失败: %w", err)
+		}
+		defer resp.Body.Close()
+
+		if resp.StatusCode != http.StatusOK {
+			return nil, fmt.Errorf("HTTP请求返回非200状态码: %d", resp.StatusCode)
+		}
+
+		fileContent, err = io.ReadAll(resp.Body)
+		if err != nil {
+			return nil, fmt.Errorf("读取响应内容失败: %w", err)
+		}
+	} else {
+		// 如果没有设置基础URL，从本地文件读取
+		fullPath := filepath.Join("public", path)
+		log.Printf("尝试读取本地文件: %s", fullPath)
+
+		fileContent, err = os.ReadFile(fullPath)
+		if err != nil {
+			return nil, fmt.Errorf("读取CSV内容时出错: %w", err)
+		}
 	}
 
 	lines := strings.Split(string(fileContent), "\n")
