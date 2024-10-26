@@ -21,14 +21,12 @@ import (
 
 const (
 	port           = ":5003"
-	cacheDuration  = 24 * time.Hour
 	requestTimeout = 10 * time.Second
 	noRepeatCount  = 3 // 在这个次数内不重复选择
 )
 
 var (
 	csvPathsCache map[string]map[string]string
-	lastFetchTime time.Time
 	csvCache      = make(map[string]*URLSelector)
 	mu            sync.RWMutex
 	rng           *rand.Rand
@@ -148,7 +146,6 @@ func loadCSVPaths() error {
 
 	mu.Lock()
 	csvPathsCache = result
-	lastFetchTime = time.Now()
 	mu.Unlock()
 
 	log.Println("CSV paths loaded from url.json")
@@ -196,7 +193,6 @@ func handleAPIRequest(w http.ResponseWriter, r *http.Request) {
 	realIP := utils.GetRealIP(r)
 	referer := r.Referer()
 
-	// 获取来源域名
 	var sourceDomain string
 	if referer != "" {
 		if parsedURL, err := url.Parse(referer); err == nil {
@@ -205,14 +201,6 @@ func handleAPIRequest(w http.ResponseWriter, r *http.Request) {
 	}
 	if sourceDomain == "" {
 		sourceDomain = "direct"
-	}
-
-	if time.Since(lastFetchTime) > cacheDuration {
-		if err := loadCSVPaths(); err != nil {
-			http.Error(w, "无法加载 CSV 路径", http.StatusInternalServerError)
-			log.Printf("加载 CSV 路径时出错: %v", err)
-			return
-		}
 	}
 
 	path := strings.TrimPrefix(r.URL.Path, "/")
@@ -237,13 +225,13 @@ func handleAPIRequest(w http.ResponseWriter, r *http.Request) {
 
 	selector, err := getCSVContent(csvPath)
 	if err != nil {
-		http.Error(w, "无法获取 CSV 内容", http.StatusInternalServerError)
-		log.Printf("获取 CSV 内容时出错: %v", err)
+		http.Error(w, "Failed to fetch CSV content", http.StatusInternalServerError)
+		log.Printf("Error fetching CSV content: %v", err)
 		return
 	}
 
 	if len(selector.URLs) == 0 {
-		http.Error(w, "无可用内容", http.StatusNotFound)
+		http.Error(w, "No content available", http.StatusNotFound)
 		return
 	}
 
@@ -254,7 +242,7 @@ func handleAPIRequest(w http.ResponseWriter, r *http.Request) {
 	statsManager.IncrementCalls(endpoint)
 
 	duration := time.Since(start)
-	log.Printf("请求：%s %s，来自 %s -来源：%s -持续时间：%v -重定向至：%s",
+	log.Printf("请求：%s %s，来自 %s -来源：%s -持续时间: %v - 重定向至: %s",
 		r.Method, r.URL.Path, realIP, sourceDomain, duration, randomURL)
 
 	http.Redirect(w, r, randomURL, http.StatusFound)
