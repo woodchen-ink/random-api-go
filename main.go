@@ -3,16 +3,16 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"io"
 	"log"
 	"math/rand"
-	"net"
 	"net/http"
 	"net/url"
 	"os"
 	"os/signal"
 	"path/filepath"
+	"random-api-go/logging"
 	"random-api-go/stats"
+	"random-api-go/utils"
 	"strings"
 	"sync"
 	"syscall"
@@ -95,8 +95,8 @@ func main() {
 	source := rand.NewSource(time.Now().UnixNano())
 	rng = rand.New(source)
 
-	setupLogging()
-	statsManager = stats.NewStatsManager("stats.json")
+	logging.SetupLogging()
+	statsManager = stats.NewStatsManager("data/stats.json")
 
 	// 设置优雅关闭
 	c := make(chan os.Signal, 1)
@@ -130,37 +130,6 @@ func main() {
 	if err := http.ListenAndServe(port, nil); err != nil {
 		log.Fatal(err)
 	}
-}
-
-func setupLogging() {
-	logFile, err := os.OpenFile("server.log", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
-	if err != nil {
-		log.Fatal(err)
-	}
-	multiWriter := io.MultiWriter(os.Stdout, logFile)
-	log.SetOutput(multiWriter)
-	log.SetFlags(log.Ldate | log.Ltime | log.Lshortfile)
-}
-
-func getRealIP(r *http.Request) string {
-	ip := r.Header.Get("X-Real-IP")
-	if ip != "" {
-		return ip
-	}
-
-	ip = r.Header.Get("X-Forwarded-For")
-	if ip != "" {
-		ips := strings.Split(ip, ",")
-		if len(ips) > 0 {
-			return strings.TrimSpace(ips[0])
-		}
-	}
-
-	ip, _, err := net.SplitHostPort(r.RemoteAddr)
-	if err != nil {
-		return r.RemoteAddr
-	}
-	return ip
 }
 
 func loadCSVPaths() error {
@@ -224,7 +193,7 @@ func getCSVContent(path string) (*URLSelector, error) {
 
 func handleAPIRequest(w http.ResponseWriter, r *http.Request) {
 	start := time.Now()
-	realIP := getRealIP(r)
+	realIP := utils.GetRealIP(r)
 	referer := r.Referer()
 
 	// 获取来源域名

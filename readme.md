@@ -99,7 +99,7 @@ location ^~ / {
 
 ## 日志
 
-日志文件位于 `logs/server.log`。使用 Docker Compose 时，可以通过卷挂载访问日志。
+日志文件位于 `/root/data/server.log`。使用 Docker Compose 时，可以通过卷挂载访问日志。
 
 ## 贡献
 
