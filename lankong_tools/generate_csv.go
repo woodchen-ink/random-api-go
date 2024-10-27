@@ -50,7 +50,7 @@ func main() {
 	}
 
 	// 创建输出目录
-	if err := os.MkdirAll("lankong_csv", 0755); err != nil {
+	if err := os.MkdirAll("public", 0755); err != nil {
 		panic(fmt.Sprintf("Failed to create output directory: %v", err))
 	}
 
@@ -60,13 +60,13 @@ func main() {
 		urls := fetchAllURLs(albumID, apiToken)
 
 		// 确保目录存在
-		dir := filepath.Dir(filepath.Join("lankong_csv", csvPath))
+		dir := filepath.Dir(filepath.Join("public", csvPath))
 		if err := os.MkdirAll(dir, 0755); err != nil {
 			panic(fmt.Sprintf("Failed to create directory for %s: %v", csvPath, err))
 		}
 
 		// 写入CSV文件
-		if err := writeURLsToFile(urls, filepath.Join("lankong_csv", csvPath)); err != nil {
+		if err := writeURLsToFile(urls, filepath.Join("public", csvPath)); err != nil {
 			panic(fmt.Sprintf("Failed to write URLs to file %s: %v", csvPath, err))
 		}
 	}
