@@ -6,6 +6,9 @@ on:
       - main
     tags:
       - v*
+    paths-ignore:
+      - 'lankong_tools/**'        
+      - '*.md'     
 
 env:
   IMAGE_NAME: random-api-go
