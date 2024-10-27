@@ -6,7 +6,6 @@ services:
       - "5003:5003"
     volumes:
       - ./public:/root/public
-      - ./logs:/var/log/random-api
       - ./data:/root/data
     environment:
       - TZ=Asia/Shanghai
