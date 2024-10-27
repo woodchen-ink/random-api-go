@@ -67,7 +67,7 @@
                 if (detailElement) detailElement.classList.add('fade');
 
                 // 获取数据
-                const response = await fetch('https://random-api.czl.net/stats');
+                const response = await fetch('/stats');
                 const stats = await response.json();
 
                 // 更新统计
@@ -136,6 +136,7 @@
                     <th>接口</th>
                     <th>今日调用</th>
                     <th>总调用</th>
+                    <th>查看</th>
                 </tr>
             </thead>
             <tbody>
@@ -143,19 +144,20 @@
 
             sortedEndpoints.forEach(([endpoint, stat]) => {
                 detailHtml += `
-            <tr>
-                <td>
-                    <a href="javascript:void(0)" 
-                       onclick="copyToClipboard('${endpoint}')"
-                       class="endpoint-link" 
-                       title="点击复制链接">
-                        ${getDisplayName(endpoint, endpointConfig)}
-                    </a>
-                </td>
-                <td>${stat.today_calls}</td>
-                <td>${stat.total_calls}</td>
-            </tr>
-        `;
+                <tr>
+                    <td>
+                        <a href="javascript:void(0)" 
+                        onclick="copyToClipboard('${endpoint}')"
+                        class="endpoint-link" 
+                        title="点击复制链接">
+                            ${getDisplayName(endpoint, endpointConfig)}
+                        </a>
+                    </td>
+                    <td>${stat.today_calls}</td>
+                    <td>${stat.total_calls}</td>
+                    <td><a href="${endpoint}" target="_blank" rel="noopener noreferrer">👀</a></td>
+                </tr>
+                `;
             });
 
             detailHtml += `
@@ -226,7 +228,7 @@
             .catch(error => console.error('Error loading index.md:', error));
 
         // 定期更新统计数据
-        setInterval(loadStats, 3 * 1000);
+        setInterval(loadStats, 5 * 1000);
     </script>
 </body>
 

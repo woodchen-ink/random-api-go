@@ -108,9 +108,9 @@ table {
   transition: opacity 0.3s ease;
 }
 
-.fade {
+/* .fade {
   opacity: 0.6;
-}
+} */
 
 .endpoint-link {
   /* color: #666; 默认字体颜色改为深灰色 */
