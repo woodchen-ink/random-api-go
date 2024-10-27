@@ -80,37 +80,23 @@ func fetchAllURLs(albumID string, apiToken string) []string {
 
 	client := &http.Client{}
 
-	for {
+	// 先发送一个请求获取总页数
+	firstPageURL := fmt.Sprintf("%s?album_id=%s&page=1", BaseURL, albumID)
+	response, err := fetchPage(firstPageURL, apiToken, client)
+	if err != nil {
+		panic(fmt.Sprintf("Failed to fetch first page: %v", err))
+	}
+
+	totalPages := response.Data.LastPage
+	fmt.Printf("Album %s has %d pages in total\n", albumID, totalPages)
+
+	for page <= totalPages {
 		// 构建请求URL
 		reqURL := fmt.Sprintf("%s?album_id=%s&page=%d", BaseURL, albumID, page)
 
-		// 创建请求
-		req, err := http.NewRequest("GET", reqURL, nil)
-		if err != nil {
-			panic(fmt.Sprintf("Failed to create request: %v", err))
-		}
-
-		// 设置请求头
-		req.Header.Set("Authorization", apiToken)
-		req.Header.Set("Accept", "application/json")
-
-		// 发送请求
-		resp, err := client.Do(req)
+		response, err := fetchPage(reqURL, apiToken, client)
 		if err != nil {
 			panic(fmt.Sprintf("Failed to fetch page %d: %v", page, err))
-		}
-
-		// 读取响应
-		body, err := io.ReadAll(resp.Body)
-		resp.Body.Close()
-		if err != nil {
-			panic(fmt.Sprintf("Failed to read response body: %v", err))
-		}
-
-		// 解析响应
-		var response Response
-		if err := json.Unmarshal(body, &response); err != nil {
-			panic(fmt.Sprintf("Failed to parse response: %v", err))
 		}
 
 		// 提取URLs
@@ -120,16 +106,43 @@ func fetchAllURLs(albumID string, apiToken string) []string {
 			}
 		}
 
-		// 检查是否还有下一页
-		if page >= response.Data.LastPage {
-			break
-		}
-		page++
+		fmt.Printf("Fetched page %d of %d for album %s (got %d URLs)\n",
+			page, totalPages, albumID, len(response.Data.Data))
 
-		fmt.Printf("Fetched page %d of %d for album %s\n", page-1, response.Data.LastPage, albumID)
+		page++
 	}
 
+	fmt.Printf("Finished album %s: collected %d URLs in total\n", albumID, len(allURLs))
 	return allURLs
+}
+
+// 添加一个辅助函数来处理单个页面的请求
+func fetchPage(url string, apiToken string, client *http.Client) (*Response, error) {
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create request: %v", err)
+	}
+
+	req.Header.Set("Authorization", apiToken)
+	req.Header.Set("Accept", "application/json")
+
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("failed to send request: %v", err)
+	}
+	defer resp.Body.Close()
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read response body: %v", err)
+	}
+
+	var response Response
+	if err := json.Unmarshal(body, &response); err != nil {
+		return nil, fmt.Errorf("failed to parse response: %v", err)
+	}
+
+	return &response, nil
 }
 
 func writeURLsToFile(urls []string, filepath string) error {

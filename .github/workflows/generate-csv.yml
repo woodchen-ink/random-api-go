@@ -32,17 +32,38 @@ jobs:
           repository: woodchen-ink/github-file
           token: ${{ secrets.TARGET_REPO_TOKEN }}
           path: target-repo
-
+          persist-credentials: false
+  
+      - name: Debug target repo access
+        run: |
+          cd target-repo
+          git remote -v
+          git status
+        env:
+          GITHUB_TOKEN: ${{ secrets.TARGET_REPO_TOKEN }}
+  
       - name: Copy and commit files
         run: |
-          # 复制生成的文件到目标仓库
-          cp -r public/* target-repo/random-api.czl.net/url/pic/
-          
+          # 显示源文件
+          echo "Source files:"
+          ls -la public/
+            
+          # 创建目标目录
+          mkdir -p target-repo/random-api.czl.net/url
+            
+          # 复制文件
+          cp -rv public/* target-repo/random-api.czl.net/url/
+            
+          # 显示目标文件
+          echo "Target files:"
+          ls -la target-repo/random-api.czl.net/url/
+            
           # 提交更改
           cd target-repo
-          git config --local user.email "action@github.com"
-          git config --local user.name "GitHub Action"
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
           git add .
-          git commit -m "Update CSV files" || echo "No changes to commit"
-          git push
+          git status
+          git commit -m "Update CSV files [skip ci]" || echo "No changes to commit"
+          git push || (echo "Push failed with status $?" && exit 1)
 
