@@ -35,21 +35,20 @@ jobs:
   
       - name: Copy and commit files
         run: |
-          # 复制文件
-          cp -rv public/* target-repo/random-api.czl.net/url/pic/
+          # 创建目标目录
+          mkdir -p target-repo/random-api.czl.net/url/pic
           
-          # 配置 git
+          # 复制所有CSV文件到pic目录
+          find public -name "*.csv" -exec cp -v {} target-repo/random-api.czl.net/url/pic/ \;
+          
           cd target-repo
           git config --local user.email "github-actions[bot]@users.noreply.github.com"
           git config --local user.name "github-actions[bot]"
           
-          # 设置远程仓库URL（使用token认证）
           git remote set-url origin https://${{ secrets.TARGET_REPO_TOKEN }}@github.com/woodchen-ink/github-file.git
           
-          # 添加并提交更改
           git add .
-          git commit -m "Update CSV files [skip ci]" || echo "No changes to commit"
-          
-          # 推送更改
+          # 删除 [skip ci] 标记
+          git commit -m "Auto update CSV files by GitHub Actions" || echo "No changes to commit"
           git push origin main
 
