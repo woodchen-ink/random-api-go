@@ -28,61 +28,20 @@
         var md = window.markdownit({
             html: true
         });
-        // 统一配置对象
-        const endpointConfig = {
-            'pic/all': {
-                name: '全部图片',
-                order: 1
-            },
-            'pic/ai': {
-                name: 'AI绘图',
-                order: 2
-            },
-            'pic/ecy': {
-                name: '二次元(ALL)',
-                order: 3
-            },
-            'pic/ecy1': {
-                name: '二次元文件1',
-                order: 4
-            },
-            'pic/ecy2': {
-                name: '二次元文件2',
-                order: 5
-            },
-            'pic/truegirl': {
-                name: '真人美女(ALL)',
-                order: 6
-            },
-            'pic/truegirl1': {
-                name: '真人美女文件1',
-                order: 7
-            },
-            'pic/truegirl2': {
-                name: '真人美女文件2',
-                order: 8
-            },
-            'pic/fj': {
-                name: '风景',
-                order: 9
-            },
-            'pic/czlwb': {
-                name: 'CZL网站背景图',
-                order: 10
-            },
-            'pic/girl-gif': {
-                name: '真人美女动图',
-                order: 11
-            },
-            'pic/loading': {
-                name: '加载图',
-                order: 12
-            },
-            'video/all': {
-                name: '视频',
-                order: 13
+
+        // 首先定义一个加载配置的函数
+        async function loadEndpointConfig() {
+            try {
+                const response = await fetch('/config/endpoint.json');
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                return await response.json();
+            } catch (error) {
+                console.error('加载endpoint配置失败:', error);
+                return {}; // 返回空对象作为默认值
             }
-        };
+        }
 
         // 加载统计数据
         async function loadStats() {
@@ -120,7 +79,9 @@
         }
 
         // 处理统计数据
-        function updateStats(stats) {
+        async function updateStats(stats) {
+            const endpointConfig = await loadEndpointConfig();
+
             const startDate = new Date('2024-10-26');
             const today = new Date();
             const daysSinceStart = Math.ceil((today - startDate) / (1000 * 60 * 60 * 24));
@@ -128,63 +89,64 @@
             let totalCalls = 0;
             let todayCalls = 0;
 
-            Object.values(stats).forEach(stat => {
-                totalCalls += stat.total_calls;
-                todayCalls += stat.today_calls;
+            Object.entries(stats).forEach(([endpoint, stat]) => {
+                if (endpointConfig[endpoint]) {
+                    totalCalls += stat.total_calls;
+                    todayCalls += stat.today_calls;
+                }
             });
 
             const avgCallsPerDay = Math.round(totalCalls / daysSinceStart);
-            // 获取所有endpoints并按order排序
+
+            const summaryHtml = `
+        <div class="stats-summary">
+            <div class="stats-header">
+                <h3>📊 接口调用次数 <span class="refresh-icon">🔄</span></h3>
+            </div>
+            <div class="stats-grid">
+                <div class="stats-item">今日总调用：${todayCalls} 次</div>
+                <div class="stats-item">平均每天调用：${avgCallsPerDay} 次</div>
+                <div class="stats-item">总调用次数：${totalCalls} 次</div>
+                <div class="stats-item">统计开始日期：2024-10-26</div>
+            </div>
+        </div>
+    `;
+
             const sortedEndpoints = Object.entries(stats)
+                .filter(([endpoint]) => endpointConfig[endpoint])
                 .sort(([endpointA], [endpointB]) => {
-                    const orderA = endpointConfig[endpointA]?.order || 999;
-                    const orderB = endpointConfig[endpointB]?.order || 999;
+                    const orderA = endpointConfig[endpointA].order;
+                    const orderB = endpointConfig[endpointB].order;
                     return orderA - orderB;
                 });
 
-            // 更新总体统计
-            const summaryHtml = `
-                <div class="stats-summary">
-                    <div class="stats-header">
-                        <h2>📊 接口调用次数 <span class="refresh-icon">🔄</span></h2>
-                    </div>
-                    <div class="stats-grid">
-                        <div class="stats-item">今日总调用：${todayCalls} 次</div>
-                        <div class="stats-item">平均每天调用：${avgCallsPerDay} 次</div>
-                        <div class="stats-item">总调用次数：${totalCalls} 次</div>
-                        <div class="stats-item">统计开始日期：2024-10-26</div>
-                    </div>
-                </div>
-            `;
-
-            // 更新详细统计
             let detailHtml = `
-                <table>
-                    <thead>
-                        <tr>
-                            <th>接口</th>
-                            <th>今日调用</th>
-                            <th>总调用</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-            `;
+        <table>
+            <thead>
+                <tr>
+                    <th>接口</th>
+                    <th>今日调用</th>
+                    <th>总调用</th>
+                </tr>
+            </thead>
+            <tbody>
+    `;
 
             sortedEndpoints.forEach(([endpoint, stat]) => {
                 detailHtml += `
-                    <tr>
-                        <td>
-                            <a href="javascript:void(0)" 
-                            onclick="copyToClipboard('${endpoint}')"
-                            class="endpoint-link" 
-                            title="点击复制链接">
-                                ${getDisplayName(endpoint)}
-                            </a>
-                        </td>
-                        <td>${stat.today_calls}</td>
-                        <td>${stat.total_calls}</td>
-                    </tr>
-                `;
+            <tr>
+                <td>
+                    <a href="javascript:void(0)" 
+                       onclick="copyToClipboard('${endpoint}')"
+                       class="endpoint-link" 
+                       title="点击复制链接">
+                        ${getDisplayName(endpoint, endpointConfig)}
+                    </a>
+                </td>
+                <td>${stat.today_calls}</td>
+                <td>${stat.total_calls}</td>
+            </tr>
+        `;
             });
 
             detailHtml += `
@@ -192,7 +154,6 @@
                 </table>
             `;
 
-            // 插入统计数据
             const summaryElement = document.getElementById('stats-summary');
             const detailElement = document.getElementById('stats-detail');
 
@@ -201,9 +162,20 @@
         }
 
         // 获取显示名称的函数
-        function getDisplayName(endpoint) {
+        function getDisplayName(endpoint, endpointConfig) {
             return endpointConfig[endpoint]?.name || endpoint;
         }
+
+        // 修改事件处理函数来处理异步更新
+        function refreshStats() {
+            fetch('/stats')
+                .then(response => response.json())
+                .then(stats => updateStats(stats))
+                .catch(error => console.error('Error:', error));
+        }
+
+        // 初始加载
+        document.addEventListener('DOMContentLoaded', refreshStats);
 
 
         // 添加复制功能
