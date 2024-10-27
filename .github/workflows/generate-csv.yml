@@ -1,6 +1,8 @@
 name: Generate CSV Files
 
 on:
+  schedule:
+    - cron: '0 */4 * * *'
   workflow_dispatch:
     inputs:
       message:
