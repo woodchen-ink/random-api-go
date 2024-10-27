@@ -29,14 +29,23 @@
             html: true
         });
 
-        // 首先定义一个加载配置的函数
+        // 用于存储配置的全局变量
+        let cachedEndpointConfig = null;
+        // 加载配置的函数
         async function loadEndpointConfig() {
+            // 如果已经有缓存的配置，直接返回
+            if (cachedEndpointConfig) {
+                return cachedEndpointConfig;
+            }
+
             try {
                 const response = await fetch('/config/endpoint.json');
                 if (!response.ok) {
                     throw new Error(`HTTP error! status: ${response.status}`);
                 }
-                return await response.json();
+                // 保存配置到缓存
+                cachedEndpointConfig = await response.json();
+                return cachedEndpointConfig;
             } catch (error) {
                 console.error('加载endpoint配置失败:', error);
                 return {}; // 返回空对象作为默认值
@@ -167,11 +176,20 @@
         }
 
         // 修改事件处理函数来处理异步更新
-        function refreshStats() {
-            fetch('/stats')
-                .then(response => response.json())
-                .then(stats => updateStats(stats))
-                .catch(error => console.error('Error:', error));
+        async function refreshStats() {
+            try {
+                // 如果配置还没有加载，先加载配置
+                if (!cachedEndpointConfig) {
+                    await loadEndpointConfig();
+                }
+
+                // 然后获取统计数据
+                const response = await fetch('/stats');
+                const stats = await response.json();
+                await updateStats(stats);
+            } catch (error) {
+                console.error('Error:', error);
+            }
         }
 
         // 初始加载
