@@ -1,0 +1,48 @@
+name: Generate CSV Files
+
+on:
+  workflow_dispatch:
+    inputs:
+      message:
+        description: 'Trigger message'
+        required: false
+        default: 'Manual trigger to generate CSV files'
+
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout source repo
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.23'
+
+      - name: Generate CSV files
+        run: |
+          go run lankong_tools/generate_csv.go
+        env:
+          API_TOKEN: ${{ secrets.API_TOKEN }}
+
+      - name: Checkout target repo
+        uses: actions/checkout@v4
+        with:
+          repository: woodchen-ink/github-file
+          token: ${{ secrets.TARGET_REPO_TOKEN }}
+          path: target-repo
+
+      - name: Copy and commit files
+        run: |
+          # 复制生成的文件到目标仓库
+          cp -r public/* target-repo/random-api.czl.net/url/pic/
+          
+          # 提交更改
+          cd target-repo
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add .
+          git commit -m "Update CSV files" || echo "No changes to commit"
+          git push
+
