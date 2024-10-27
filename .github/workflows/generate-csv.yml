@@ -48,7 +48,8 @@ jobs:
           
           # 添加并提交更改
           git add .
-          git commit -m "Update CSV files [skip ci]" || echo "No changes to commit"
+          # 允许CI [skip ci]
+          git commit -m "Github Bot Update CSV files " || echo "No changes to commit"
           
           # 推送更改
           git push origin main
