@@ -28,18 +28,17 @@ type Response struct {
 	} `json:"data"`
 }
 
-// 相册映射结构体
-type AlbumMapping map[string]string
+// 修改映射类型为 map[string][]string，键为CSV文件路径，值为相册ID数组
+type AlbumMapping map[string][]string
 
 func main() {
-	// 读取API Token
 	apiToken := os.Getenv("API_TOKEN")
 	if apiToken == "" {
 		panic("API_TOKEN environment variable is required")
 	}
 
 	// 读取相册映射配置
-	mappingFile, err := os.ReadFile("lankong_tools/album_mapping.json")
+	mappingFile, err := os.ReadFile("config/album_mapping.json")
 	if err != nil {
 		panic(fmt.Sprintf("Failed to read album mapping: %v", err))
 	}
@@ -54,10 +53,17 @@ func main() {
 		panic(fmt.Sprintf("Failed to create output directory: %v", err))
 	}
 
-	// 处理每个相册
-	for albumID, csvPath := range albumMapping {
-		fmt.Printf("Processing album %s -> %s\n", albumID, csvPath)
-		urls := fetchAllURLs(albumID, apiToken)
+	// 处理每个CSV文件的映射
+	for csvPath, albumIDs := range albumMapping {
+		fmt.Printf("Processing CSV file: %s (Albums: %v)\n", csvPath, albumIDs)
+
+		// 收集所有相册的URLs
+		var allURLs []string
+		for _, albumID := range albumIDs {
+			fmt.Printf("Fetching URLs for album %s\n", albumID)
+			urls := fetchAllURLs(albumID, apiToken)
+			allURLs = append(allURLs, urls...)
+		}
 
 		// 确保目录存在
 		dir := filepath.Dir(filepath.Join("public", csvPath))
@@ -66,9 +72,11 @@ func main() {
 		}
 
 		// 写入CSV文件
-		if err := writeURLsToFile(urls, filepath.Join("public", csvPath)); err != nil {
+		if err := writeURLsToFile(allURLs, filepath.Join("public", csvPath)); err != nil {
 			panic(fmt.Sprintf("Failed to write URLs to file %s: %v", csvPath, err))
 		}
+
+		fmt.Printf("Finished processing %s: wrote %d URLs\n", csvPath, len(allURLs))
 	}
 
 	fmt.Println("All CSV files generated successfully!")
@@ -76,11 +84,10 @@ func main() {
 
 func fetchAllURLs(albumID string, apiToken string) []string {
 	var allURLs []string
-	page := 1
 
 	client := &http.Client{}
 
-	// 先发送一个请求获取总页数
+	// 获取第一页以确定总页数
 	firstPageURL := fmt.Sprintf("%s?album_id=%s&page=1", BaseURL, albumID)
 	response, err := fetchPage(firstPageURL, apiToken, client)
 	if err != nil {
@@ -90,33 +97,28 @@ func fetchAllURLs(albumID string, apiToken string) []string {
 	totalPages := response.Data.LastPage
 	fmt.Printf("Album %s has %d pages in total\n", albumID, totalPages)
 
-	for page <= totalPages {
-		// 构建请求URL
+	// 处理所有页面
+	for page := 1; page <= totalPages; page++ {
 		reqURL := fmt.Sprintf("%s?album_id=%s&page=%d", BaseURL, albumID, page)
-
 		response, err := fetchPage(reqURL, apiToken, client)
 		if err != nil {
 			panic(fmt.Sprintf("Failed to fetch page %d: %v", page, err))
 		}
 
-		// 提取URLs
 		for _, item := range response.Data.Data {
 			if item.Links.URL != "" {
 				allURLs = append(allURLs, item.Links.URL)
 			}
 		}
 
-		fmt.Printf("Fetched page %d of %d for album %s (got %d URLs)\n",
-			page, totalPages, albumID, len(response.Data.Data))
-
-		page++
+		fmt.Printf("Fetched page %d of %d for album %s (total URLs so far: %d)\n",
+			page, totalPages, albumID, len(allURLs))
 	}
 
 	fmt.Printf("Finished album %s: collected %d URLs in total\n", albumID, len(allURLs))
 	return allURLs
 }
 
-// 添加一个辅助函数来处理单个页面的请求
 func fetchPage(url string, apiToken string, client *http.Client) (*Response, error) {
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
@@ -146,14 +148,12 @@ func fetchPage(url string, apiToken string, client *http.Client) (*Response, err
 }
 
 func writeURLsToFile(urls []string, filepath string) error {
-	// 创建文件
 	file, err := os.Create(filepath)
 	if err != nil {
 		return err
 	}
 	defer file.Close()
 
-	// 写入URLs
 	for _, url := range urls {
 		if _, err := file.WriteString(url + "\n"); err != nil {
 			return err

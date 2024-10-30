@@ -1,8 +1,8 @@
 {
-  "20": "girl-gif.csv",
-  "19": "loading.csv",
-  "18": "ai.csv",
-  "16": "fj.csv",
-  "14": "ecy.csv",
-  "10": "truegirl.csv"
+  "pic/girl-gif.csv": ["20"],
+  "pic/loading.csv": ["19"],
+  "pic/ai.csv": ["18"],
+  "pic/fj.csv": ["16"],
+  "pic/ecy.csv": ["14"], 
+  "pic/truegirl.csv": ["10","21","22","23","24","25"]
 }
