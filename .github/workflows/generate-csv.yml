@@ -1,6 +1,9 @@
 name: Generate CSV Files
 
 on:
+  push:
+    paths:
+      - lankong_tools/album_mapping.json
   schedule:
     - cron: '0 */4 * * *'
   workflow_dispatch:
@@ -9,6 +12,7 @@ on:
         description: 'Trigger message'
         required: false
         default: 'Manual trigger to generate CSV files'
+
 
 jobs:
   generate:
