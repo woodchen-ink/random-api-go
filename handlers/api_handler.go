@@ -27,14 +27,17 @@ func HandleAPIRequest(w http.ResponseWriter, r *http.Request) {
 	realIP := utils.GetRealIP(r)
 	referer := r.Referer()
 
-	var sourceDomain string
+	// 修改这部分,获取完整的referer信息
+	sourceInfo := "direct"
 	if referer != "" {
 		if parsedURL, err := url.Parse(referer); err == nil {
-			sourceDomain = parsedURL.Hostname()
+			// 包含主机名和路径
+			sourceInfo = parsedURL.Host + parsedURL.Path
+			// 如果有查询参数,也可以加上
+			if parsedURL.RawQuery != "" {
+				sourceInfo += "?" + parsedURL.RawQuery
+			}
 		}
-	}
-	if sourceDomain == "" {
-		sourceDomain = "direct"
 	}
 
 	path := strings.TrimPrefix(r.URL.Path, "/")
@@ -77,7 +80,7 @@ func HandleAPIRequest(w http.ResponseWriter, r *http.Request) {
 
 	duration := time.Since(start)
 	log.Printf("请求：%s %s，来自 %s -来源：%s -持续时间: %v - 重定向至: %s",
-		r.Method, r.URL.Path, realIP, sourceDomain, duration, randomURL)
+		r.Method, r.URL.Path, realIP, sourceInfo, duration, randomURL)
 
 	http.Redirect(w, r, randomURL, http.StatusFound)
 }
