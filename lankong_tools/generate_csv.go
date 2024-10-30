@@ -38,7 +38,7 @@ func main() {
 	}
 
 	// 读取相册映射配置
-	mappingFile, err := os.ReadFile("config/album_mapping.json")
+	mappingFile, err := os.ReadFile("lankong_tools/album_mapping.json")
 	if err != nil {
 		panic(fmt.Sprintf("Failed to read album mapping: %v", err))
 	}
