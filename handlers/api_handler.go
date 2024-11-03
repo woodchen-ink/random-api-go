@@ -82,6 +82,15 @@ func HandleAPIRequest(w http.ResponseWriter, r *http.Request) {
 	log.Printf("请求：%s %s，来自 %s -来源：%s -持续时间: %v - 重定向至: %s",
 		r.Method, r.URL.Path, realIP, sourceInfo, duration, randomURL)
 
+	log.Printf(" %12s | %15s | %-6s | %-50s | %s | %-50s",
+		duration,   // 持续时间
+		realIP,     // 真实IP
+		r.Method,   // HTTP方法
+		r.URL.Path, // 请求路径
+		sourceInfo, // 来源信息
+		randomURL,  // 重定向URL
+	)
+
 	http.Redirect(w, r, randomURL, http.StatusFound)
 }
 
