@@ -80,7 +80,7 @@ func HandleAPIRequest(w http.ResponseWriter, r *http.Request) {
 
 	duration := time.Since(start)
 
-	log.Printf(" %12s | %15s | %-6s | %-50s | %s | %-50s",
+	log.Printf(" %-12s | %-15s | %-6s | %-20s | %-20s | %-50s",
 		duration,   // 持续时间
 		realIP,     // 真实IP
 		r.Method,   // HTTP方法
