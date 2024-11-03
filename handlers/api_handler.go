@@ -79,8 +79,6 @@ func HandleAPIRequest(w http.ResponseWriter, r *http.Request) {
 	statsManager.IncrementCalls(endpoint)
 
 	duration := time.Since(start)
-	log.Printf("请求：%s %s，来自 %s -来源：%s -持续时间: %v - 重定向至: %s",
-		r.Method, r.URL.Path, realIP, sourceInfo, duration, randomURL)
 
 	log.Printf(" %12s | %15s | %-6s | %-50s | %s | %-50s",
 		duration,   // 持续时间
