@@ -9,6 +9,7 @@ import (
 	"random-api-go/config"
 	"random-api-go/handlers"
 	"random-api-go/logging"
+	"random-api-go/services"
 	"random-api-go/stats"
 
 	"syscall"
@@ -34,6 +35,11 @@ func main() {
 	// 初始化handlers
 	if err := handlers.InitializeHandlers(statsManager); err != nil {
 		log.Fatal("Failed to initialize handlers:", err)
+	}
+
+	// 初始化加载所有CSV内容
+	if err := services.InitializeCSVService(); err != nil {
+		log.Fatal("Failed to initialize CSV Service:", err)
 	}
 
 	// 设置路由
@@ -64,4 +70,6 @@ func setupRoutes() {
 	http.HandleFunc("/pic/", handlers.HandleAPIRequest)
 	http.HandleFunc("/video/", handlers.HandleAPIRequest)
 	http.HandleFunc("/stats", handlers.HandleStats)
+	// 添加URL统计接口
+	http.HandleFunc("/urlstats", handlers.HandleURLStats)
 }

@@ -23,7 +23,32 @@ var (
 
 // InitializeCSVService 初始化CSV服务
 func InitializeCSVService() error {
-	return LoadCSVPaths()
+	// 加载url.json
+	if err := LoadCSVPaths(); err != nil {
+		return fmt.Errorf("failed to load CSV paths: %v", err)
+	}
+
+	// 预加载所有CSV内容
+	Mu.RLock()
+	defer Mu.RUnlock()
+
+	for prefix, suffixMap := range CSVPathsCache {
+		for suffix, csvPath := range suffixMap {
+			selector, err := GetCSVContent(csvPath)
+			if err != nil {
+				log.Printf("Warning: Failed to load CSV content for %s/%s: %v", prefix, suffix, err)
+				continue
+			}
+
+			// 更新URL计数
+			endpoint := fmt.Sprintf("%s/%s", prefix, suffix)
+			UpdateURLCount(endpoint, csvPath, len(selector.URLs))
+
+			log.Printf("Loaded %d URLs for endpoint: %s/%s", len(selector.URLs), prefix, suffix)
+		}
+	}
+
+	return nil
 }
 
 func LoadCSVPaths() error {
