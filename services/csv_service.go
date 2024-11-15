@@ -121,14 +121,14 @@ func LoadCSVPaths() error {
 }
 
 func GetCSVContent(path string) (*models.URLSelector, error) {
-	log.Printf("开始获取CSV内容: %s", path)
+	// log.Printf("开始获取CSV内容: %s", path)
 
 	Mu.RLock()
 	selector, exists := csvCache[path]
 	Mu.RUnlock()
 
 	if exists {
-		log.Printf("从缓存中获取到CSV内容: %s", path)
+		// log.Printf("从缓存中获取到CSV内容: %s", path)
 		return selector, nil
 	}
 

@@ -14,7 +14,8 @@
 
     </style>
     <script src="https://lf6-cdn-tos.bytecdntp.com/cdn/expire-1-M/markdown-it/12.3.2/markdown-it.min.js"></script>
-    <script defer src="https://analytics.czl.net/script.js" data-website-id="67f71dbc-799c-46b6-9c23-b1b012daef65"></script>
+    <script defer src="https://analytics.czl.net/script.js"
+        data-website-id="67f71dbc-799c-46b6-9c23-b1b012daef65"></script>
 </head>
 
 <body>
@@ -132,33 +133,40 @@
                 });
 
             let detailHtml = `
-        <table>
-            <thead>
-                <tr>
-                    <th>接口</th>
-                    <th>今日调用</th>
-                    <th>总调用</th>
-                    <th>查看</th>
-                </tr>
-            </thead>
-            <tbody>
-    `;
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>接口</th>
+                                <th>今日调用</th>
+                                <th>总调用</th>
+                                <th>URL数量</th>
+                                <th>查看</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                `;
+
+            // 同时加载URL统计数据
+            const urlStatsResponse = await fetch('/urlstats');
+            const urlStats = await urlStatsResponse.json();
 
             sortedEndpoints.forEach(([endpoint, stat]) => {
+                const urlCount = urlStats[endpoint]?.total_urls || 0;
                 detailHtml += `
-                <tr>
-                    <td>
-                        <a href="javascript:void(0)" 
-                        onclick="copyToClipboard('${endpoint}')"
-                        class="endpoint-link" 
-                        title="点击复制链接">
-                            ${getDisplayName(endpoint, endpointConfig)}
-                        </a>
-                    </td>
-                    <td>${stat.today_calls}</td>
-                    <td>${stat.total_calls}</td>
-                    <td><a href="${endpoint}" target="_blank" rel="noopener noreferrer">👀</a></td>
-                </tr>
+                    <tr>
+                        <td>
+                            <a href="javascript:void(0)" 
+                            onclick="copyToClipboard('${endpoint}')"
+                            class="endpoint-link" 
+                            title="点击复制链接">
+                                ${getDisplayName(endpoint, endpointConfig)}
+                            </a>
+                        </td>
+                        <td>${stat.today_calls}</td>
+                        <td>${stat.total_calls}</td>
+                        <td>${urlCount}</td>
+                        <td><a href="${endpoint}" target="_blank" rel="noopener noreferrer">👀</a></td>
+                    </tr>
                 `;
             });
 
