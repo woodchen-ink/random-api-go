@@ -1,0 +1,23 @@
+FROM --platform=$TARGETPLATFORM alpine:latest
+
+WORKDIR /root/
+
+# 安装必要的包
+RUN apk --no-cache add ca-certificates tzdata tini
+
+# 创建日志目录并设置权限
+RUN mkdir -p /var/log/random-api && chmod 755 /var/log/random-api
+
+# 根据目标平台复制对应的二进制文件
+ARG TARGETARCH
+COPY bin/${TARGETARCH}/random-api .
+COPY public ./public
+COPY public /tmp/public
+COPY start.sh /start.sh
+RUN chmod +x /start.sh
+
+EXPOSE 5003
+
+# 使用 tini 作为初始化系统
+ENTRYPOINT ["/sbin/tini", "--"]
+CMD ["/start.sh"]

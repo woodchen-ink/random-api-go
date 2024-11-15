@@ -7,9 +7,9 @@ on:
     tags:
       - v*
     paths-ignore:
-      - 'lankong_tools/**'        
+      - 'lankong_tools/**'
       - '*.md'
-      - '.github/**'     
+      - '.github/**'
 
 env:
   IMAGE_NAME: random-api-go
@@ -19,8 +19,21 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout
+      - name: Checkout code
         uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: '1.23'
+
+      - name: Build for amd64
+        run: |
+          CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -a -installsuffix cgo -o bin/amd64/random-api .
+
+      - name: Build for arm64
+        run: |
+          CGO_ENABLED=0 GOOS=linux GOARCH=arm64 go build -a -installsuffix cgo -o bin/arm64/random-api .
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
@@ -34,11 +47,11 @@ jobs:
           username: woodchen
           password: ${{ secrets.ACCESS_TOKEN }}
 
-      - name: Build and push
+      - name: Build and push multi-arch image
         uses: docker/build-push-action@v5
         with:
           context: .
-          file: Dockerfile
+          file: Dockerfile.run
           push: true
           tags: woodchen/${{ env.IMAGE_NAME }}:latest
           platforms: linux/amd64,linux/arm64
@@ -53,8 +66,8 @@ jobs:
           host: ${{ secrets.SERVER_HOST }}
           username: root
           key: ${{ secrets.SERVER_SSH_KEY }}
-          source: "public.zip"
-          target: "/tmp"
+          source: 'public.zip'
+          target: '/tmp'
 
       - name: Execute deployment commands
         uses: appleboy/ssh-action@master
