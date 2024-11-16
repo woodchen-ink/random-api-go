@@ -37,10 +37,17 @@ func main() {
 		panic("API_TOKEN environment variable is required")
 	}
 
-	// 读取相册映射配置
-	mappingFile, err := os.ReadFile("lankong_tools/album_mapping.json")
+	// 从远程获取相册映射配置
+	resp, err := http.Get("https://github-file-2mq.pages.dev/random-api.czl.net/album_mapping.json")
 	if err != nil {
-		panic(fmt.Sprintf("Failed to read album mapping: %v", err))
+		panic(fmt.Sprintf("Failed to fetch album mapping: %v", err))
+	}
+	defer resp.Body.Close()
+
+	// 读取响应内容
+	mappingFile, err := io.ReadAll(resp.Body)
+	if err != nil {
+		panic(fmt.Sprintf("Failed to read album mapping response: %v", err))
 	}
 
 	var albumMapping AlbumMapping
