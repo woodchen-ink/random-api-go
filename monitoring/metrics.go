@@ -3,7 +3,6 @@ package monitoring
 import (
 	"encoding/json"
 	"fmt"
-	"net/url"
 	"runtime"
 	"strings"
 	"sync"
@@ -122,18 +121,9 @@ func LogRequest(log RequestLog) {
 
 	metrics.StatusCodes[log.StatusCode]++
 
-	// 处理 referer，只保留域名
+	// 直接使用完整的 referer
 	if log.Referer != "direct" {
-		if parsedURL, err := url.Parse(log.Referer); err == nil {
-			// 只保留主域名
-			parts := strings.Split(parsedURL.Host, ".")
-			if len(parts) >= 2 {
-				domain := parts[len(parts)-2] + "." + parts[len(parts)-1]
-				metrics.TopReferers[domain]++
-			} else {
-				metrics.TopReferers[parsedURL.Host]++
-			}
-		}
+		metrics.TopReferers[log.Referer]++
 	} else {
 		metrics.TopReferers["直接访问"]++
 	}

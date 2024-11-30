@@ -28,7 +28,13 @@ func (h *Handlers) HandleAPIRequest(w http.ResponseWriter, r *http.Request) {
 	ctx, cancel := context.WithTimeout(r.Context(), 10*time.Second)
 	defer cancel()
 
-	done := make(chan struct{})
+	// 创建一个响应通道，用于传递结果
+	type result struct {
+		url string
+		err error
+	}
+	resultChan := make(chan result, 1)
+
 	go func() {
 		start := time.Now()
 		realIP := utils.GetRealIP(r)
@@ -57,7 +63,7 @@ func (h *Handlers) HandleAPIRequest(w http.ResponseWriter, r *http.Request) {
 				IP:         realIP,
 				Referer:    sourceInfo,
 			})
-			http.NotFound(w, r)
+			resultChan <- result{err: fmt.Errorf("not found")}
 			return
 		}
 
@@ -78,7 +84,7 @@ func (h *Handlers) HandleAPIRequest(w http.ResponseWriter, r *http.Request) {
 				IP:         realIP,
 				Referer:    sourceInfo,
 			})
-			http.NotFound(w, r)
+			resultChan <- result{err: fmt.Errorf("not found")}
 			return
 		}
 
@@ -94,7 +100,7 @@ func (h *Handlers) HandleAPIRequest(w http.ResponseWriter, r *http.Request) {
 				IP:         realIP,
 				Referer:    sourceInfo,
 			})
-			http.Error(w, "Failed to fetch content", http.StatusInternalServerError)
+			resultChan <- result{err: err}
 			return
 		}
 
@@ -108,7 +114,7 @@ func (h *Handlers) HandleAPIRequest(w http.ResponseWriter, r *http.Request) {
 				IP:         realIP,
 				Referer:    sourceInfo,
 			})
-			http.Error(w, "No content available", http.StatusNotFound)
+			resultChan <- result{err: fmt.Errorf("no content available")}
 			return
 		}
 
@@ -136,14 +142,17 @@ func (h *Handlers) HandleAPIRequest(w http.ResponseWriter, r *http.Request) {
 			randomURL,
 		)
 
-		http.Redirect(w, r, randomURL, http.StatusFound)
-
-		done <- struct{}{}
+		resultChan <- result{url: randomURL}
 	}()
 
+	// 等待结果或超时
 	select {
-	case <-done:
-		// 请求成功完成
+	case res := <-resultChan:
+		if res.err != nil {
+			http.Error(w, res.err.Error(), http.StatusInternalServerError)
+			return
+		}
+		http.Redirect(w, r, res.url, http.StatusFound)
 	case <-ctx.Done():
 		http.Error(w, "Request timeout", http.StatusGatewayTimeout)
 	}
