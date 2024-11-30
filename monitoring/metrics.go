@@ -108,6 +108,7 @@ func LogRequest(log RequestLog) {
 	bucket.mu.Lock()
 	defer bucket.mu.Unlock()
 
+	mu.Lock() // 添加全局锁保护 map 写入
 	metrics.StatusCodes[log.StatusCode]++
 
 	// 直接使用完整的 referer
@@ -116,23 +117,28 @@ func LogRequest(log RequestLog) {
 	} else {
 		metrics.TopReferers["直接访问"]++
 	}
+	mu.Unlock()
 
 	// 只记录 API 请求
 	if strings.HasPrefix(log.Path, "/pic/") || strings.HasPrefix(log.Path, "/video/") {
 		// 更新路径延迟
+		mu.Lock() // 保护 PathLatencies map
 		if existing, ok := metrics.PathLatencies[log.Path]; ok {
 			metrics.PathLatencies[log.Path] = (existing + log.Latency) / 2
 		} else {
 			metrics.PathLatencies[log.Path] = log.Latency
 		}
+		mu.Unlock()
 
-		// 保存最近请求记录，插入到开头
+		// 保存最近请求记录
+		mu.Lock() // 保护 RecentRequests
 		metrics.RecentRequests = append([]RequestLog{log}, metrics.RecentRequests...)
 		if len(metrics.RecentRequests) > 100 {
 			metrics.RecentRequests = metrics.RecentRequests[:100]
 		}
+		mu.Unlock()
 
-		// 更新平均延迟（保持微秒单位）
+		// 更新平均延迟
 		count := metrics.RequestCount.Load()
 		if count > 1 {
 			metrics.AverageLatency = (metrics.AverageLatency*(float64(count)-1) + log.Latency) / float64(count)
