@@ -30,14 +30,14 @@ func NewApp() *App {
 }
 
 func (a *App) Initialize() error {
-	// 创建必要的目录
-	if err := os.MkdirAll(config.Get().Storage.DataDir, 0755); err != nil {
-		return fmt.Errorf("failed to create data directory: %w", err)
-	}
-
-	// 初始化配置
+	// 先加载配置
 	if err := config.Load("/root/data/config.json"); err != nil {
 		return err
+	}
+
+	// 然后创建必要的目录
+	if err := os.MkdirAll(config.Get().Storage.DataDir, 0755); err != nil {
+		return fmt.Errorf("failed to create data directory: %w", err)
 	}
 
 	// 初始化日志
