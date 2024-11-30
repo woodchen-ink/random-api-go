@@ -210,77 +210,53 @@
 
         async function loadMetrics() {
             try {
-                const response = await fetch('/metrics');
-                const metrics = await response.json();
-                updateMetricsDisplay(metrics);
+                const response = await fetch('/api/metrics');
+                const data = await response.json();
+                
+                // 添加数据验证
+                if (!data || typeof data !== 'object') {
+                    throw new Error('Invalid metrics data received');
+                }
+                
+                updateMetricsDisplay(data);
             } catch (error) {
                 console.error('Error loading metrics:', error);
+                document.getElementById('metrics-container').innerHTML = 
+                    '<p class="error">加载指标数据时出错，请稍后重试</p>';
             }
         }
         
-        function updateMetricsDisplay(metrics) {
-            const metricsHtml = `
-                <div class="metrics-container">
-                    <div class="metrics-section">
-                        <h3>基础指标</h3>
-                        <div class="metrics-grid">
-                            <div class="metric-item">运行时间：${formatDuration(metrics?.uptime || 0)}</div>
-                            <div class="metric-item">启动时间：${new Date(metrics?.start_time || Date.now()).toLocaleString()}</div>
-                        </div>
-                    </div>
-                    
-                    <div class="metrics-section">
-                        <h3>系统指标</h3>
-                        <div class="metrics-grid">
-                            <div class="metric-item">CPU核心数：${metrics?.num_cpu || 0}</div>
-                            <div class="metric-item">Goroutine数：${metrics?.num_goroutine || 0}</div>
-                            <div class="metric-item">内存使用：${formatBytes(metrics?.memory_stats?.heap_alloc || 0)}</div>
-                            <div class="metric-item">系统内存：${formatBytes(metrics?.memory_stats?.heap_sys || 0)}</div>
-                            <div class="metric-item">平均延迟：${formatLatency(metrics?.average_latency || 0)}</div>
-                        </div>
-                    </div>
-                    
-                    <div class="metrics-section">
-                        <h3>热门引用来源 (5分钟统计)</h3>
-                        <div class="top-referers">
-                            ${metrics?.top_referers ? Object.entries(metrics.top_referers)
-                                .sort(([, a], [, b]) => b - a)
-                                .slice(0, 10)
-                                .map(([referer, count]) => `
-                                    <div class="referer-item">
-                                        <span class="referer">${referer}</span>
-                                        <span class="count">${count}</span>
-                                    </div>
-                                `).join('') : ''}
-                        </div>
-                    </div>
-                </div>
-            `;
+        function updateMetricsDisplay(metricsData) {
+            // 确保 metricsData 是有效对象
+            if (!metricsData || typeof metricsData !== 'object') {
+                console.error('Invalid metrics data');
+                return;
+            }
+
+            const container = document.getElementById('metrics-container');
+            container.innerHTML = ''; // 清空现有内容
+
+            // 使用 Object.entries 之前进行安全检查
+            const entries = Object.entries(metricsData).filter(([key, value]) => key && value !== undefined);
             
-            const metricsElement = document.getElementById('system-metrics');
-            if (metricsElement) {
-                metricsElement.innerHTML = metricsHtml;
-            }
+            entries.forEach(([key, value]) => {
+                const metricDiv = document.createElement('div');
+                metricDiv.className = 'metric-item';
+                metricDiv.innerHTML = `
+                    <h3>${escapeHtml(key)}</h3>
+                    <p>${escapeHtml(String(value))}</p>
+                `;
+                container.appendChild(metricDiv);
+            });
         }
         
-        function formatBytes(bytes) {
-            const units = ['B', 'KB', 'MB', 'GB'];
-            let size = bytes;
-            let unitIndex = 0;
-            while (size >= 1024 && unitIndex < units.length - 1) {
-                size /= 1024;
-                unitIndex++;
-            }
-            return `${size.toFixed(2)} ${units[unitIndex]}`;
-        }
-        
-        function formatDuration(ns) {
-            const duration = ns / 1e9; // 转换为秒
-            const days = Math.floor(duration / 86400);
-            const hours = Math.floor((duration % 86400) / 3600);
-            const minutes = Math.floor((duration % 3600) / 60);
-            const seconds = Math.floor(duration % 60);
-            return `${days}天 ${hours}时 ${minutes}分 ${seconds}秒`;
+        function escapeHtml(unsafe) {
+            return unsafe
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");
         }
         
         // 定期更新监控数据
