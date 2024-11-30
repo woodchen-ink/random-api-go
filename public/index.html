@@ -221,12 +221,12 @@
             // 格式化延迟显示
             function formatLatency(microseconds) {
                 if (microseconds < 1000) {
-                    return `${microseconds.toFixed(2)}µs`;
+                    return `${microseconds.toFixed(3)}µs`;
                 }
                 if (microseconds < 1000000) {
-                    return `${(microseconds/1000).toFixed(2)}ms`;
+                    return `${(microseconds/1000).toFixed(3)}ms`;
                 }
-                return `${(microseconds/1000000).toFixed(2)}s`;
+                return `${(microseconds/1000000).toFixed(3)}s`;
             }
 
             // 最近请求

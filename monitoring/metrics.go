@@ -1,6 +1,7 @@
 package monitoring
 
 import (
+	"encoding/json"
 	"fmt"
 	"net/url"
 	"runtime"
@@ -103,12 +104,12 @@ func CollectMetrics() *SystemMetrics {
 
 func formatLatency(microseconds float64) string {
 	if microseconds < 1000 {
-		return fmt.Sprintf("%.2fµs", microseconds)
+		return fmt.Sprintf("%.3fµs", microseconds)
 	}
 	if microseconds < 1000000 {
-		return fmt.Sprintf("%.2fms", microseconds/1000)
+		return fmt.Sprintf("%.3fms", microseconds/1000)
 	}
-	return fmt.Sprintf("%.2fs", microseconds/1000000)
+	return fmt.Sprintf("%.3fs", microseconds/1000000)
 }
 
 func LogRequest(log RequestLog) {
@@ -124,10 +125,17 @@ func LogRequest(log RequestLog) {
 	// 处理 referer，只保留域名
 	if log.Referer != "direct" {
 		if parsedURL, err := url.Parse(log.Referer); err == nil {
-			metrics.TopReferers[parsedURL.Host]++
+			// 只保留主域名
+			parts := strings.Split(parsedURL.Host, ".")
+			if len(parts) >= 2 {
+				domain := parts[len(parts)-2] + "." + parts[len(parts)-1]
+				metrics.TopReferers[domain]++
+			} else {
+				metrics.TopReferers[parsedURL.Host]++
+			}
 		}
 	} else {
-		metrics.TopReferers["direct"]++
+		metrics.TopReferers["直接访问"]++
 	}
 
 	// 只记录 API 请求
@@ -167,4 +175,16 @@ func getBucket(path string) *bucket {
 		hash = hash*31 + uint32(path[i])
 	}
 	return &buckets[hash%32]
+}
+
+// 添加 MarshalJSON 方法
+func (m *SystemMetrics) MarshalJSON() ([]byte, error) {
+	type Alias SystemMetrics
+	return json.Marshal(&struct {
+		RequestCount int64 `json:"request_count"`
+		*Alias
+	}{
+		RequestCount: m.RequestCount.Load(),
+		Alias:        (*Alias)(m),
+	})
 }
