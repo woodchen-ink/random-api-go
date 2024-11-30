@@ -232,7 +232,7 @@
             // 最近请求
             const recentRequestsHtml = metrics.recent_requests.map(req => `
                 <tr>
-                    <td>${new Date(req.time * 1000).toLocaleString()}</td>
+                    <td>${new Date(req.time).toLocaleString()}</td>
                     <td>${req.path}</td>
                     <td>${req.method}</td>
                     <td>${req.status_code}</td>

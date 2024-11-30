@@ -55,7 +55,7 @@ func (h *Handlers) HandleAPIRequest(w http.ResponseWriter, r *http.Request) {
 
 		if len(pathSegments) < 2 {
 			monitoring.LogRequest(monitoring.RequestLog{
-				Time:       time.Now().Unix(),
+				Time:       time.Now().UnixMilli(),
 				Path:       r.URL.Path,
 				Method:     r.Method,
 				StatusCode: http.StatusNotFound,
@@ -76,7 +76,7 @@ func (h *Handlers) HandleAPIRequest(w http.ResponseWriter, r *http.Request) {
 
 		if !ok {
 			monitoring.LogRequest(monitoring.RequestLog{
-				Time:       time.Now().Unix(),
+				Time:       time.Now().UnixMilli(),
 				Path:       r.URL.Path,
 				Method:     r.Method,
 				StatusCode: http.StatusNotFound,
@@ -92,7 +92,7 @@ func (h *Handlers) HandleAPIRequest(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			log.Printf("Error fetching CSV content: %v", err)
 			monitoring.LogRequest(monitoring.RequestLog{
-				Time:       time.Now().Unix(),
+				Time:       time.Now().UnixMilli(),
 				Path:       r.URL.Path,
 				Method:     r.Method,
 				StatusCode: http.StatusInternalServerError,
@@ -106,7 +106,7 @@ func (h *Handlers) HandleAPIRequest(w http.ResponseWriter, r *http.Request) {
 
 		if len(selector.URLs) == 0 {
 			monitoring.LogRequest(monitoring.RequestLog{
-				Time:       time.Now().Unix(),
+				Time:       time.Now().UnixMilli(),
 				Path:       r.URL.Path,
 				Method:     r.Method,
 				StatusCode: http.StatusNotFound,
@@ -124,7 +124,7 @@ func (h *Handlers) HandleAPIRequest(w http.ResponseWriter, r *http.Request) {
 
 		duration := time.Since(start)
 		monitoring.LogRequest(monitoring.RequestLog{
-			Time:       time.Now().Unix(),
+			Time:       time.Now().UnixMilli(),
 			Path:       r.URL.Path,
 			Method:     r.Method,
 			StatusCode: http.StatusFound,
