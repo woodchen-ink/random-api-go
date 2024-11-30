@@ -39,9 +39,6 @@ type SystemMetrics struct {
 	// 路径延迟统计
 	PathLatencies map[string]float64 `json:"path_latencies"`
 
-	// 最近请求
-	RecentRequests []RequestLog `json:"recent_requests"`
-
 	// 热门引用来源
 	TopReferers map[string]int64 `json:"top_referers"`
 
@@ -76,7 +73,6 @@ func init() {
 	metrics.StatusCodes = make(map[int]int64)
 	metrics.PathLatencies = make(map[string]float64)
 	metrics.TopReferers = make(map[string]int64)
-	metrics.RecentRequests = make([]RequestLog, 0, 100)
 }
 
 func CollectMetrics() *SystemMetrics {
@@ -103,11 +99,6 @@ func CollectMetrics() *SystemMetrics {
 func LogRequest(log RequestLog) {
 	metrics.RequestCount.Add(1)
 
-	// 使用分段锁减少锁竞争
-	bucket := getBucket(log.Path)
-	bucket.mu.Lock()
-	defer bucket.mu.Unlock()
-
 	mu.Lock() // 添加全局锁保护 map 写入
 	metrics.StatusCodes[log.StatusCode]++
 
@@ -127,14 +118,6 @@ func LogRequest(log RequestLog) {
 			metrics.PathLatencies[log.Path] = (existing + log.Latency) / 2
 		} else {
 			metrics.PathLatencies[log.Path] = log.Latency
-		}
-		mu.Unlock()
-
-		// 保存最近请求记录
-		mu.Lock() // 保护 RecentRequests
-		metrics.RecentRequests = append([]RequestLog{log}, metrics.RecentRequests...)
-		if len(metrics.RecentRequests) > 100 {
-			metrics.RecentRequests = metrics.RecentRequests[:100]
 		}
 		mu.Unlock()
 

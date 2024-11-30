@@ -229,28 +229,6 @@
                 return `${(microseconds/1000000).toFixed(3)}s`;
             }
 
-            // 最近请求
-            const recentRequestsHtml = metrics.recent_requests.map(req => `
-                <tr>
-                    <td>${new Date(req.time).toLocaleString()}</td>
-                    <td>${req.path}</td>
-                    <td>${req.method}</td>
-                    <td>${req.status_code}</td>
-                    <td>${formatLatency(req.latency)}</td>
-                </tr>
-            `).join('');
-
-            // 热门引用来源
-            const topReferersHtml = Object.entries(metrics.top_referers)
-                .sort(([, a], [, b]) => b - a)
-                .slice(0, 10)
-                .map(([referer, count]) => `
-                    <div class="referer-item">
-                        <span class="referer">${referer}</span>
-                        <span class="count">${count}</span>
-                    </div>
-                `).join('');
-
             const metricsHtml = `
                 <div class="metrics-container">
                     <div class="metrics-section">
@@ -293,29 +271,17 @@
                     </div>
                     
                     <div class="metrics-section">
-                        <h3>最近请求</h3>
-                        <div class="recent-requests">
-                            <table>
-                                <thead>
-                                    <tr>
-                                        <th>时间</th>
-                                        <th>路径</th>
-                                        <th>方法</th>
-                                        <th>状态</th>
-                                        <th>延迟</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    ${recentRequestsHtml}
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                    
-                    <div class="metrics-section">
                         <h3>热门引用来源</h3>
                         <div class="top-referers">
-                            ${topReferersHtml}
+                            ${Object.entries(metrics.top_referers)
+                                .sort(([, a], [, b]) => b - a)
+                                .slice(0, 10)
+                                .map(([referer, count]) => `
+                                    <div class="referer-item">
+                                        <span class="referer">${referer}</span>
+                                        <span class="count">${count}</span>
+                                    </div>
+                                `).join('')}
                         </div>
                     </div>
                 </div>
