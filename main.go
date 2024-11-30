@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"math/rand"
 	"net/http"
 	"os"
 	"os/signal"
@@ -34,6 +35,10 @@ func (a *App) Initialize() error {
 	if err := config.Load("/root/data/config.json"); err != nil {
 		return err
 	}
+
+	// 初始化随机数生成器
+	source := rand.NewSource(time.Now().UnixNano())
+	config.InitRNG(rand.New(source))
 
 	// 然后创建必要的目录
 	if err := os.MkdirAll(config.Get().Storage.DataDir, 0755); err != nil {

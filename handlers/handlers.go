@@ -144,12 +144,25 @@ func (h *Handlers) HandleStats(w http.ResponseWriter, r *http.Request) {
 
 func (h *Handlers) HandleURLStats(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
-	services.Mu.RLock()
-	response := map[string]interface{}{
-		"paths": services.CSVPathsCache,
+	stats := services.GetURLCounts()
+
+	// 转换为前端期望的格式
+	response := make(map[string]struct {
+		TotalURLs int `json:"total_urls"`
+	})
+
+	for endpoint, stat := range stats {
+		response[endpoint] = struct {
+			TotalURLs int `json:"total_urls"`
+		}{
+			TotalURLs: stat.TotalURLs,
+		}
 	}
-	services.Mu.RUnlock()
-	json.NewEncoder(w).Encode(response)
+
+	if err := json.NewEncoder(w).Encode(response); err != nil {
+		http.Error(w, "Error encoding response", http.StatusInternalServerError)
+		return
+	}
 }
 
 func (h *Handlers) HandleMetrics(w http.ResponseWriter, r *http.Request) {
