@@ -136,6 +136,8 @@ func (h *Handlers) HandleAPIRequest(w http.ResponseWriter, r *http.Request) {
 			randomURL,
 		)
 
+		http.Redirect(w, r, randomURL, http.StatusFound)
+
 		done <- struct{}{}
 	}()
 
