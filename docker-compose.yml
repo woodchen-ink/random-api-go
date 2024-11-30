@@ -8,5 +8,5 @@ services:
       - ./data:/root/data
     environment:
       - TZ=Asia/Shanghai
-      - BASE_URL=https://github-file.czl.net/random-api.czl.net
+      - BASE_URL=https://example.net/random-api
     restart: unless-stopped

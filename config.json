@@ -8,7 +8,7 @@
   "storage": {
     "data_dir": "/root/data",
     "stats_file": "/root/data/stats.json",
-    "log_file": "/var/log/random-api/server.log"
+    "log_file": "/root/data/logs/server.log"
   },
   "api": {
     "base_url": "",
