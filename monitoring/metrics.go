@@ -1,6 +1,7 @@
 package monitoring
 
 import (
+	"encoding/json"
 	"runtime"
 	"strings"
 	"sync"
@@ -22,7 +23,7 @@ type SystemMetrics struct {
 	} `json:"memory_stats"`
 
 	// 热门引用来源
-	TopReferers sync.Map `json:"-"` // 使用 sync.Map 足够了
+	TopReferers sync.Map `json:"-"` // 内部使用 sync.Map
 }
 
 type RequestLog struct {
@@ -53,9 +54,17 @@ func init() {
 func LogRequest(log RequestLog) {
 	// 更新引用来源
 	if log.Referer != "direct" {
-		metrics.TopReferers.Store(log.Referer, 1)
+		if val, ok := metrics.TopReferers.Load(log.Referer); ok {
+			metrics.TopReferers.Store(log.Referer, val.(int64)+1)
+		} else {
+			metrics.TopReferers.Store(log.Referer, int64(1))
+		}
 	} else {
-		metrics.TopReferers.Store("直接访问", 1)
+		if val, ok := metrics.TopReferers.Load("直接访问"); ok {
+			metrics.TopReferers.Store("直接访问", val.(int64)+1)
+		} else {
+			metrics.TopReferers.Store("直接访问", int64(1))
+		}
 	}
 
 	// 更新平均延迟 (只关心 API 请求)
@@ -76,4 +85,23 @@ func CollectMetrics() *SystemMetrics {
 	metrics.MemoryStats.HeapSys = m.HeapSys
 
 	return &metrics
+}
+
+// 添加 MarshalJSON 方法来正确序列化 TopReferers
+func (m *SystemMetrics) MarshalJSON() ([]byte, error) {
+	type Alias SystemMetrics
+	referers := make(map[string]int64)
+
+	m.TopReferers.Range(func(key, value interface{}) bool {
+		referers[key.(string)] = value.(int64)
+		return true
+	})
+
+	return json.Marshal(&struct {
+		*Alias
+		TopReferers map[string]int64 `json:"top_referers"`
+	}{
+		Alias:       (*Alias)(m),
+		TopReferers: referers,
+	})
 }
