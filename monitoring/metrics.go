@@ -2,6 +2,7 @@ package monitoring
 
 import (
 	"runtime"
+	"strings"
 	"sync"
 	"time"
 )
@@ -95,16 +96,19 @@ func LogRequest(log RequestLog) {
 	metrics.StatusCodes[log.StatusCode]++
 	metrics.TopReferers[log.Referer]++
 
-	// 更新路径延迟
-	if existing, ok := metrics.PathLatencies[log.Path]; ok {
-		metrics.PathLatencies[log.Path] = (existing + log.Latency) / 2
-	} else {
-		metrics.PathLatencies[log.Path] = log.Latency
-	}
+	// 只记录 API 请求
+	if strings.HasPrefix(log.Path, "/pic/") || strings.HasPrefix(log.Path, "/video/") {
+		// 更新路径延迟
+		if existing, ok := metrics.PathLatencies[log.Path]; ok {
+			metrics.PathLatencies[log.Path] = (existing + log.Latency) / 2
+		} else {
+			metrics.PathLatencies[log.Path] = log.Latency
+		}
 
-	// 保存最近请求记录
-	metrics.RecentRequests = append(metrics.RecentRequests, log)
-	if len(metrics.RecentRequests) > 100 {
-		metrics.RecentRequests = metrics.RecentRequests[1:]
+		// 保存最近请求记录
+		metrics.RecentRequests = append(metrics.RecentRequests, log)
+		if len(metrics.RecentRequests) > 100 {
+			metrics.RecentRequests = metrics.RecentRequests[1:]
+		}
 	}
 }
