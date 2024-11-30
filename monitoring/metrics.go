@@ -1,6 +1,8 @@
 package monitoring
 
 import (
+	"fmt"
+	"net/url"
 	"runtime"
 	"strings"
 	"sync"
@@ -88,13 +90,31 @@ func CollectMetrics() *SystemMetrics {
 	return &metrics
 }
 
+func formatLatency(microseconds float64) string {
+	if microseconds < 1000 {
+		return fmt.Sprintf("%.2fµs", microseconds)
+	}
+	if microseconds < 1000000 {
+		return fmt.Sprintf("%.2fms", microseconds/1000)
+	}
+	return fmt.Sprintf("%.2fs", microseconds/1000000)
+}
+
 func LogRequest(log RequestLog) {
 	mu.Lock()
 	defer mu.Unlock()
 
 	metrics.RequestCount++
 	metrics.StatusCodes[log.StatusCode]++
-	metrics.TopReferers[log.Referer]++
+
+	// 处理 referer，只保留域名
+	if log.Referer != "direct" {
+		if parsedURL, err := url.Parse(log.Referer); err == nil {
+			metrics.TopReferers[parsedURL.Host]++
+		}
+	} else {
+		metrics.TopReferers["direct"]++
+	}
 
 	// 只记录 API 请求
 	if strings.HasPrefix(log.Path, "/pic/") || strings.HasPrefix(log.Path, "/video/") {
@@ -105,10 +125,10 @@ func LogRequest(log RequestLog) {
 			metrics.PathLatencies[log.Path] = log.Latency
 		}
 
-		// 保存最近请求记录
-		metrics.RecentRequests = append(metrics.RecentRequests, log)
+		// 保存最近请求记录，插入到开头
+		metrics.RecentRequests = append([]RequestLog{log}, metrics.RecentRequests...)
 		if len(metrics.RecentRequests) > 100 {
-			metrics.RecentRequests = metrics.RecentRequests[1:]
+			metrics.RecentRequests = metrics.RecentRequests[:100]
 		}
 	}
 }

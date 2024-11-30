@@ -218,6 +218,39 @@
         }
         
         function updateMetricsDisplay(metrics) {
+            // 格式化延迟显示
+            function formatLatency(microseconds) {
+                if (microseconds < 1000) {
+                    return `${microseconds.toFixed(2)}µs`;
+                }
+                if (microseconds < 1000000) {
+                    return `${(microseconds/1000).toFixed(2)}ms`;
+                }
+                return `${(microseconds/1000000).toFixed(2)}s`;
+            }
+
+            // 最近请求
+            const recentRequestsHtml = metrics.recent_requests.map(req => `
+                <tr>
+                    <td>${new Date(req.time).toLocaleString()}</td>
+                    <td>${req.path}</td>
+                    <td>${req.method}</td>
+                    <td>${req.status_code}</td>
+                    <td>${formatLatency(req.latency)}</td>
+                </tr>
+            `).join('');
+
+            // 热门引用来源
+            const topReferersHtml = Object.entries(metrics.top_referers)
+                .sort(([, a], [, b]) => b - a)
+                .slice(0, 10)
+                .map(([referer, count]) => `
+                    <div class="referer-item">
+                        <span class="referer">${referer}</span>
+                        <span class="count">${count}</span>
+                    </div>
+                `).join('');
+
             const metricsHtml = `
                 <div class="metrics-container">
                     <div class="metrics-section">
@@ -273,15 +306,7 @@
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    ${metrics.recent_requests.slice(0, 10).map(req => `
-                                        <tr>
-                                            <td>${new Date(req.time).toLocaleString()}</td>
-                                            <td>${req.path}</td>
-                                            <td>${req.method}</td>
-                                            <td>${req.status_code}</td>
-                                            <td>${req.latency.toFixed(2)}ms</td>
-                                        </tr>
-                                    `).join('')}
+                                    ${recentRequestsHtml}
                                 </tbody>
                             </table>
                         </div>
@@ -290,15 +315,7 @@
                     <div class="metrics-section">
                         <h3>热门引用来源</h3>
                         <div class="top-referers">
-                            ${Object.entries(metrics.top_referers)
-                                .sort(([,a], [,b]) => b - a)
-                                .slice(0, 10)
-                                .map(([referer, count]) => `
-                                    <div class="referer-item">
-                                        <span class="referer">${referer || '直接访问'}</span>
-                                        <span class="count">${count}</span>
-                                    </div>
-                                `).join('')}
+                            ${topReferersHtml}
                         </div>
                     </div>
                 </div>
