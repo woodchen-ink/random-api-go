@@ -27,8 +27,8 @@ COPY --from=builder /app/public ./public
 # 复制 public 目录到一个临时位置
 COPY --from=builder /app/public /tmp/public
 
-# 创建日志目录并设置权限
-RUN mkdir -p /var/log/random-api && chmod 755 /var/log/random-api
+# 创建必要的目录
+RUN mkdir -p /root/data/logs /root/data/public
 
 EXPOSE 5003
 

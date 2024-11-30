@@ -21,7 +21,7 @@ func New() *Router {
 
 func (r *Router) Setup(h Handler) {
 	// 静态文件服务
-	fileServer := http.FileServer(http.Dir("./public"))
+	fileServer := http.FileServer(http.Dir("/root/data/public"))
 	r.mux.Handle("/", middleware.Chain(
 		middleware.Recovery,
 		middleware.MetricsMiddleware,
