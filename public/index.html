@@ -275,7 +275,7 @@
                         <h3>性能指标</h3>
                         <div class="metrics-grid">
                             <div class="metric-item">总请求数：${metrics.request_count}</div>
-                            <div class="metric-item">平均延迟：${metrics.average_latency.toFixed(2)}ms</div>
+                            <div class="metric-item">平均延迟：${formatLatency(metrics.average_latency)}</div>
                         </div>
                     </div>
                     

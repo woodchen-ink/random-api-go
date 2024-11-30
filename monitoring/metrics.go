@@ -2,7 +2,6 @@ package monitoring
 
 import (
 	"encoding/json"
-	"fmt"
 	"runtime"
 	"strings"
 	"sync"
@@ -101,16 +100,6 @@ func CollectMetrics() *SystemMetrics {
 	return &metrics
 }
 
-func formatLatency(microseconds float64) string {
-	if microseconds < 1000 {
-		return fmt.Sprintf("%.3fµs", microseconds)
-	}
-	if microseconds < 1000000 {
-		return fmt.Sprintf("%.3fms", microseconds/1000)
-	}
-	return fmt.Sprintf("%.3fs", microseconds/1000000)
-}
-
 func LogRequest(log RequestLog) {
 	metrics.RequestCount.Add(1)
 
@@ -142,14 +131,15 @@ func LogRequest(log RequestLog) {
 		if len(metrics.RecentRequests) > 100 {
 			metrics.RecentRequests = metrics.RecentRequests[:100]
 		}
-	}
-}
 
-// 添加字符串池
-var stringPool = sync.Pool{
-	New: func() interface{} {
-		return new(string)
-	},
+		// 更新平均延迟（保持微秒单位）
+		count := metrics.RequestCount.Load()
+		if count > 1 {
+			metrics.AverageLatency = (metrics.AverageLatency*(float64(count)-1) + log.Latency) / float64(count)
+		} else {
+			metrics.AverageLatency = log.Latency
+		}
+	}
 }
 
 // 添加分段锁结构
