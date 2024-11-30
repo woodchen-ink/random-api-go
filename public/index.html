@@ -210,7 +210,7 @@
 
         async function loadMetrics() {
             try {
-                const response = await fetch('/api/metrics');
+                const response = await fetch('/metrics');
                 const data = await response.json();
                 
                 // 添加数据验证
