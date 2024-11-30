@@ -1,14 +1,11 @@
-# Random-Api 随机文件API
+<div id="system-metrics"></div>
 
 <div class="stats-container">
     <div id="stats-summary"></div>
     <div id="stats-detail"></div>
 </div>
 
-<div id="system-metrics"></div>
-
 --- 
-
 
 ## 部署和原理
 

@@ -3,9 +3,22 @@ body {
   height: 100%;
   margin: 0;
   font-weight: 300;
+  background: transparent;
+  overflow: auto;
+}
+
+body::before {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
   background-image: url(https://random-api.czl.net/pic/all);
   background-size: cover;
-  overflow: auto;
+  background-position: center;
+  z-index: -1;
+  opacity: 0.8;
 }
 
 .overlay {
@@ -14,7 +27,7 @@ body {
   left: 0;
   width: 100%;
   height: 100%;
-  background-color: rgba(0, 0, 0, 0.8);
+  background-color: rgba(0, 0, 0, 0.7);
   z-index: 2;
   overflow-y: auto;
 }
@@ -45,29 +58,27 @@ img {
 }
 
 .stats-summary {
-  background-color: #44444423;
-  padding: 15px;
+  background: rgba(255, 255, 255, 0.05);
+  padding: 20px;
   border-radius: 8px;
   margin: 20px 0;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  width: 100%;
 }
 
 .stats-grid {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  /* 两列布局 */
-  gap: 10px;
-  /* 项目之间的间距 */
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 15px;
+  margin-top: 15px;
 }
 
 .stats-item {
-  padding: 5px;
-}
-
-/* 确保在小屏幕上切换为单列 */
-@media (max-width: 600px) {
-  .stats-grid {
-    grid-template-columns: 1fr;
-  }
+  background: rgba(255, 255, 255, 0.05);
+  padding: 12px 15px;
+  border-radius: 6px;
+  font-size: 0.95em;
+  color: #999;
 }
 
 .stats-header {
@@ -80,6 +91,7 @@ img {
 .stats-header h2 {
   margin: 0;
   padding: 0;
+  color: #fff;
 }
 
 .refresh-icon {
@@ -113,21 +125,16 @@ table {
 } */
 
 .endpoint-link {
-  /* color: #666; 默认字体颜色改为深灰色 */
-  text-decoration: none;
-  cursor: pointer;
-  padding: 2px 8px; /* 稍微增加内边距 */
+  color: #2196f3;
+  padding: 4px 8px;
   border-radius: 4px;
-  transition: all 0.3s ease; /* 平滑过渡效果 */
-  display: inline-block; /* 使padding生效 */
-  font-weight: 500; /* 稍微加粗 */
+  transition: all 0.2s ease;
 }
 
 .endpoint-link:hover {
-  background-color: #2196f3; /* 鼠标悬停时的背景色改为蓝色 */
-  color: white; /* 鼠标悬停时文字变为白色 */
-  transform: translateY(-1px); /* 轻微上浮效果 */
-  box-shadow: 0 2px 4px rgba(33, 150, 243, 0.2); /* 添加阴影效果 */
+  background: rgba(33, 150, 243, 0.1);
+  color: #2196f3;
+  transform: translateY(-1px);
 }
 
 /* 点击时的效果 */
@@ -176,78 +183,185 @@ table {
 
 /* 系统监控样式 */
 .metrics-container {
-    background: rgba(0, 0, 0, 0.2);
-    border-radius: 8px;
-    padding: 20px;
-    margin: 20px 0;
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 8px;
+  padding: 20px;
+  margin: 20px 0;
 }
 
 .metrics-section {
-    margin-bottom: 20px;
+  margin-bottom: 20px;
 }
 
 .metrics-section h3 {
-    color: #2196f3;
-    margin-bottom: 15px;
-    font-size: 1.1em;
-    border-bottom: 1px solid rgba(33, 150, 243, 0.2);
-    padding-bottom: 5px;
+  color: #2196f3;
+  margin-bottom: 15px;
+  font-size: 1.1em;
+  border-bottom: 1px solid rgba(33, 150, 243, 0.2);
+  padding-bottom: 5px;
 }
 
 .metrics-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: 10px;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 10px;
 }
 
 .metric-item {
-    background: rgba(255, 255, 255, 0.1);
-    padding: 12px;
-    border-radius: 6px;
-    font-size: 0.9em;
+  background: rgba(255, 255, 255, 0.1);
+  padding: 12px;
+  border-radius: 6px;
+  font-size: 0.9em;
 }
 
 .status-codes {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-    gap: 10px;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 10px;
 }
 
 .status-code-item {
-    background: rgba(255, 255, 255, 0.1);
-    padding: 8px 12px;
-    border-radius: 6px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
+  background: rgba(255, 255, 255, 0.1);
+  padding: 8px 12px;
+  border-radius: 6px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
 }
 
 .recent-requests table {
-    width: 100%;
-    border-collapse: collapse;
-    font-size: 0.9em;
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9em;
 }
 
 .recent-requests th,
 .recent-requests td {
-    padding: 8px;
-    text-align: left;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  padding: 8px;
+  text-align: left;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .recent-requests th {
-    color: #2196f3;
-    font-weight: 500;
+  color: #2196f3;
+  font-weight: 500;
 }
 
 .top-referers {
-    display: grid;
-    gap: 8px;
+  display: grid;
+  gap: 8px;
 }
 
 .referer-item {
-    background: rgba(255, 255, 255, 0.1);
-    padding: 8px 12px;
+  background: rgba(255, 255, 255, 0.1);
+  padding: 8px 12px;
+  border-radius: 6px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.referer {
+  max-width: 70%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.count {
+  color: #2196f3;
+  font-weight: 500;
+}
+
+/* 更新表格样式 */
+.stats-table {
+  margin-top: 20px;
+  overflow-x: auto;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 8px;
+  overflow: hidden;
+  margin: 20px 0;
+}
+
+th, td {
+  padding: 12px 15px;
+  text-align: left;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  color: #999;
+}
+
+th {
+  background: rgba(33, 150, 243, 0.1);
+  font-weight: 500;
+  color: #2196f3;
+}
+
+tr:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+/* 操作按钮样式 */
+td a {
+  color: #2196f3;
+  text-decoration: none;
+  margin-right: 8px;
+  padding: 4px 8px;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+}
+
+td a:hover {
+  background: rgba(33, 150, 243, 0.1);
+}
+
+/* 响应式优化 */
+@media (max-width: 768px) {
+  .stats-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  th, td {
+    padding: 8px 10px;
+  }
+  
+  .stats-table {
+    margin: 10px -15px;
+    width: calc(100% + 30px);
+  }
+}
+
+/* 系统指标样式 */
+.metrics-section {
+    margin-bottom: 20px;
+}
+
+.metric-label {
+    color: #999;
+    font-size: 0.9em;
+    margin-bottom: 4px;
+}
+
+.metric-value {
+    font-size: 1.1em;
+    font-weight: 500;
+    color: #2196f3;
+}
+
+.referers-list {
+    margin-top: 15px;
+    display: grid;
+    gap: 8px;
+    width: 100%;
+}
+
+.referer-item {
+    background: rgba(255, 255, 255, 0.05);
+    padding: 10px 15px;
     border-radius: 6px;
     display: flex;
     justify-content: space-between;
@@ -255,6 +369,7 @@ table {
 }
 
 .referer {
+    color: #999;
     max-width: 70%;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -264,4 +379,64 @@ table {
 .count {
     color: #2196f3;
     font-weight: 500;
+    padding: 2px 8px;
+    background: rgba(33, 150, 243, 0.1);
+    border-radius: 4px;
+}
+
+.error-message {
+    background: rgba(255, 0, 0, 0.1);
+    color: #ff4444;
+    padding: 12px;
+    border-radius: 6px;
+    margin: 10px 0;
+    text-align: center;
+}
+
+/* 确保系统指标和统计数据之间有适当间距 */
+#system-metrics {
+    max-width: 800px;
+    margin: 0 auto 30px auto;
+}
+
+/* 优化移动端显示 */
+@media (max-width: 768px) {
+    .stats-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .metric-label {
+        font-size: 0.85em;
+    }
+    
+    .metric-value {
+        font-size: 1em;
+    }
+    
+    .referer {
+        max-width: 60%;
+    }
+}
+
+.main-title {
+    text-align: center;
+    color: #fff;
+    margin: 20px 0;
+    font-size: 2em;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+    position: relative;
+    z-index: 3;
+}
+
+/* 修改统计数据容器的宽度限制 */
+.stats-container {
+    max-width: 800px;
+    margin: 0 auto;
+}
+
+/* 移动端适配 */
+@media (max-width: 768px) {
+    .stats-container {
+        padding: 0 15px;
+    }
 }
