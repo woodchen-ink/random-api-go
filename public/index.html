@@ -21,6 +21,7 @@
 <body>
     <div class="overlay">
         <main>
+            <div id="system-metrics"></div>
             <div id="markdown-content" class="prose prose-dark">
             </div>
         </main>
@@ -218,62 +219,31 @@
         }
         
         function updateMetricsDisplay(metrics) {
-            // 格式化延迟显示
-            function formatLatency(microseconds) {
-                if (microseconds < 1000) {
-                    return `${microseconds.toFixed(3)}µs`;
-                }
-                if (microseconds < 1000000) {
-                    return `${(microseconds/1000).toFixed(3)}ms`;
-                }
-                return `${(microseconds/1000000).toFixed(3)}s`;
-            }
-
             const metricsHtml = `
                 <div class="metrics-container">
                     <div class="metrics-section">
                         <h3>基础指标</h3>
                         <div class="metrics-grid">
-                            <div class="metric-item">运行时间：${formatDuration(metrics.uptime)}</div>
-                            <div class="metric-item">启动时间：${new Date(metrics.start_time).toLocaleString()}</div>
+                            <div class="metric-item">运行时间：${formatDuration(metrics?.uptime || 0)}</div>
+                            <div class="metric-item">启动时间：${new Date(metrics?.start_time || Date.now()).toLocaleString()}</div>
                         </div>
                     </div>
                     
                     <div class="metrics-section">
                         <h3>系统指标</h3>
                         <div class="metrics-grid">
-                            <div class="metric-item">CPU核心数：${metrics.num_cpu}</div>
-                            <div class="metric-item">Goroutine数：${metrics.num_goroutine}</div>
-                            <div class="metric-item">内存使用：${formatBytes(metrics.memory_stats.heap_alloc)}</div>
-                            <div class="metric-item">系统内存：${formatBytes(metrics.memory_stats.heap_sys)}</div>
+                            <div class="metric-item">CPU核心数：${metrics?.num_cpu || 0}</div>
+                            <div class="metric-item">Goroutine数：${metrics?.num_goroutine || 0}</div>
+                            <div class="metric-item">内存使用：${formatBytes(metrics?.memory_stats?.heap_alloc || 0)}</div>
+                            <div class="metric-item">系统内存：${formatBytes(metrics?.memory_stats?.heap_sys || 0)}</div>
+                            <div class="metric-item">平均延迟：${formatLatency(metrics?.average_latency || 0)}</div>
                         </div>
                     </div>
                     
                     <div class="metrics-section">
-                        <h3>性能指标</h3>
-                        <div class="metrics-grid">
-                            <div class="metric-item">总请求数：${metrics.request_count}</div>
-                            <div class="metric-item">平均延迟：${formatLatency(metrics.average_latency)}</div>
-                        </div>
-                    </div>
-                    
-                    <div class="metrics-section">
-                        <h3>状态码统计</h3>
-                        <div class="status-codes">
-                            ${Object.entries(metrics.status_codes)
-                                .map(([code, count]) => `
-                                    <div class="status-code-item">
-                                        <span class="code">${code}</span>
-                                        <span class="count">${count}</span>
-                                    </div>
-                                `).join('')}
-                        </div>
-                    </div>
-                    
-                    <div class="metrics-section">
-                        <h3>热门引用来源</h3>
+                        <h3>热门引用来源 (5分钟统计)</h3>
                         <div class="top-referers">
-                            ${Object.entries(metrics.top_referers)
+                            ${metrics?.top_referers ? Object.entries(metrics.top_referers)
                                 .sort(([, a], [, b]) => b - a)
                                 .slice(0, 10)
                                 .map(([referer, count]) => `
@@ -281,7 +251,7 @@
                                         <span class="referer">${referer}</span>
                                         <span class="count">${count}</span>
                                     </div>
-                                `).join('')}
+                                `).join('') : ''}
                         </div>
                     </div>
                 </div>
