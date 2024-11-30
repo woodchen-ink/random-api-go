@@ -6,8 +6,9 @@ services:
       - "5003:5003"
     volumes:
       - ./public:/root/public
+      - ./logs:/var/log/random-api
       - ./data:/root/data
     environment:
       - TZ=Asia/Shanghai
-      - BASE_URL=https://example.com/csvfile
+      - BASE_URL=https://github-file.czl.net/random-api.czl.net
     restart: unless-stopped

@@ -6,6 +6,7 @@ import (
 	"log"
 	"net/http"
 	"net/url"
+	"random-api-go/monitoring"
 	"random-api-go/services"
 	"random-api-go/stats"
 	"random-api-go/utils"
@@ -31,9 +32,7 @@ func HandleAPIRequest(w http.ResponseWriter, r *http.Request) {
 	sourceInfo := "direct"
 	if referer != "" {
 		if parsedURL, err := url.Parse(referer); err == nil {
-			// 包含主机名和路径
 			sourceInfo = parsedURL.Host + parsedURL.Path
-			// 如果有查询参数,也可以加上
 			if parsedURL.RawQuery != "" {
 				sourceInfo += "?" + parsedURL.RawQuery
 			}
@@ -44,6 +43,15 @@ func HandleAPIRequest(w http.ResponseWriter, r *http.Request) {
 	pathSegments := strings.Split(path, "/")
 
 	if len(pathSegments) < 2 {
+		monitoring.LogRequest(monitoring.RequestLog{
+			Time:       time.Now(),
+			Path:       r.URL.Path,
+			Method:     r.Method,
+			StatusCode: http.StatusNotFound,
+			Latency:    float64(time.Since(start).Microseconds()) / 1000,
+			IP:         realIP,
+			Referer:    sourceInfo,
+		})
 		http.NotFound(w, r)
 		return
 	}
@@ -79,6 +87,17 @@ func HandleAPIRequest(w http.ResponseWriter, r *http.Request) {
 	statsManager.IncrementCalls(endpoint)
 
 	duration := time.Since(start)
+
+	// 记录请求日志
+	monitoring.LogRequest(monitoring.RequestLog{
+		Time:       time.Now(),
+		Path:       r.URL.Path,
+		Method:     r.Method,
+		StatusCode: http.StatusFound,
+		Latency:    float64(duration.Microseconds()) / 1000, // 转换为毫秒
+		IP:         realIP,
+		Referer:    sourceInfo,
+	})
 
 	log.Printf(" %-12s | %-15s | %-6s | %-20s | %-20s | %-50s",
 		duration,   // 持续时间

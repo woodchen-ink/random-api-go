@@ -239,6 +239,137 @@
 
         // 定期更新统计数据
         setInterval(loadStats, 5 * 1000);
+
+        async function loadMetrics() {
+            try {
+                const response = await fetch('/metrics');
+                const metrics = await response.json();
+                updateMetricsDisplay(metrics);
+            } catch (error) {
+                console.error('Error loading metrics:', error);
+            }
+        }
+        
+        function updateMetricsDisplay(metrics) {
+            const metricsHtml = `
+                <div class="metrics-container">
+                    <div class="metrics-section">
+                        <h3>基础指标</h3>
+                        <div class="metrics-grid">
+                            <div class="metric-item">运行时间：${formatDuration(metrics.uptime)}</div>
+                            <div class="metric-item">启动时间：${new Date(metrics.start_time).toLocaleString()}</div>
+                        </div>
+                    </div>
+                    
+                    <div class="metrics-section">
+                        <h3>系统指标</h3>
+                        <div class="metrics-grid">
+                            <div class="metric-item">CPU核心数：${metrics.num_cpu}</div>
+                            <div class="metric-item">Goroutine数：${metrics.num_goroutine}</div>
+                            <div class="metric-item">内存使用：${formatBytes(metrics.memory_stats.heap_alloc)}</div>
+                            <div class="metric-item">系统内存：${formatBytes(metrics.memory_stats.heap_sys)}</div>
+                        </div>
+                    </div>
+                    
+                    <div class="metrics-section">
+                        <h3>性能指标</h3>
+                        <div class="metrics-grid">
+                            <div class="metric-item">总请求数：${metrics.request_count}</div>
+                            <div class="metric-item">平均延迟：${metrics.average_latency.toFixed(2)}ms</div>
+                        </div>
+                    </div>
+                    
+                    <div class="metrics-section">
+                        <h3>状态码统计</h3>
+                        <div class="status-codes">
+                            ${Object.entries(metrics.status_codes)
+                                .map(([code, count]) => `
+                                    <div class="status-code-item">
+                                        <span class="code">${code}</span>
+                                        <span class="count">${count}</span>
+                                    </div>
+                                `).join('')}
+                        </div>
+                    </div>
+                    
+                    <div class="metrics-section">
+                        <h3>最近请求</h3>
+                        <div class="recent-requests">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>时间</th>
+                                        <th>路径</th>
+                                        <th>方法</th>
+                                        <th>状态</th>
+                                        <th>延迟</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    ${metrics.recent_requests.slice(0, 10).map(req => `
+                                        <tr>
+                                            <td>${new Date(req.time).toLocaleString()}</td>
+                                            <td>${req.path}</td>
+                                            <td>${req.method}</td>
+                                            <td>${req.status_code}</td>
+                                            <td>${req.latency.toFixed(2)}ms</td>
+                                        </tr>
+                                    `).join('')}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    
+                    <div class="metrics-section">
+                        <h3>热门引用来源</h3>
+                        <div class="top-referers">
+                            ${Object.entries(metrics.top_referers)
+                                .sort(([,a], [,b]) => b - a)
+                                .slice(0, 10)
+                                .map(([referer, count]) => `
+                                    <div class="referer-item">
+                                        <span class="referer">${referer || '直接访问'}</span>
+                                        <span class="count">${count}</span>
+                                    </div>
+                                `).join('')}
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            const metricsElement = document.getElementById('system-metrics');
+            if (metricsElement) {
+                metricsElement.innerHTML = metricsHtml;
+            }
+        }
+        
+        function formatBytes(bytes) {
+            const units = ['B', 'KB', 'MB', 'GB'];
+            let size = bytes;
+            let unitIndex = 0;
+            while (size >= 1024 && unitIndex < units.length - 1) {
+                size /= 1024;
+                unitIndex++;
+            }
+            return `${size.toFixed(2)} ${units[unitIndex]}`;
+        }
+        
+        function formatDuration(ns) {
+            const duration = ns / 1e9; // 转换为秒
+            const days = Math.floor(duration / 86400);
+            const hours = Math.floor((duration % 86400) / 3600);
+            const minutes = Math.floor((duration % 3600) / 60);
+            const seconds = Math.floor(duration % 60);
+            return `${days}天 ${hours}时 ${minutes}分 ${seconds}秒`;
+        }
+        
+        // 定期更新监控数据
+        setInterval(loadMetrics, 5000);
+        
+        // 初始加载
+        document.addEventListener('DOMContentLoaded', () => {
+            loadMetrics();
+        });
     </script>
 </body>
 

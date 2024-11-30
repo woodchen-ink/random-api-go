@@ -5,6 +5,8 @@
     <div id="stats-detail"></div>
 </div>
 
+<div id="system-metrics"></div>
+
 --- 
 
 
