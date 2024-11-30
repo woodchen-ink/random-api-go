@@ -44,7 +44,7 @@ func HandleAPIRequest(w http.ResponseWriter, r *http.Request) {
 
 	if len(pathSegments) < 2 {
 		monitoring.LogRequest(monitoring.RequestLog{
-			Time:       time.Now(),
+			Time:       time.Now().Unix(),
 			Path:       r.URL.Path,
 			Method:     r.Method,
 			StatusCode: http.StatusNotFound,
@@ -90,7 +90,7 @@ func HandleAPIRequest(w http.ResponseWriter, r *http.Request) {
 
 	// 记录请求日志
 	monitoring.LogRequest(monitoring.RequestLog{
-		Time:       time.Now(),
+		Time:       time.Now().Unix(),
 		Path:       r.URL.Path,
 		Method:     r.Method,
 		StatusCode: http.StatusFound,

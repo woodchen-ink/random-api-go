@@ -33,6 +33,13 @@ type Config struct {
 		BaseURL        string        `json:"base_url"`
 		RequestTimeout time.Duration `json:"request_timeout"`
 	} `json:"api"`
+
+	Performance struct {
+		MaxConcurrentRequests int           `json:"max_concurrent_requests"`
+		RequestTimeout        time.Duration `json:"request_timeout"`
+		CacheTTL              time.Duration `json:"cache_ttl"`
+		EnableCompression     bool          `json:"enable_compression"`
+	} `json:"performance"`
 }
 
 var (
@@ -77,6 +84,17 @@ func Load(configFile string) error {
 			}{
 				BaseURL:        "",
 				RequestTimeout: 10 * time.Second,
+			},
+			Performance: struct {
+				MaxConcurrentRequests int           `json:"max_concurrent_requests"`
+				RequestTimeout        time.Duration `json:"request_timeout"`
+				CacheTTL              time.Duration `json:"cache_ttl"`
+				EnableCompression     bool          `json:"enable_compression"`
+			}{
+				MaxConcurrentRequests: 100,
+				RequestTimeout:        10 * time.Second,
+				CacheTTL:              1 * time.Hour,
+				EnableCompression:     true,
 			},
 		}
 

@@ -6,6 +6,7 @@ import (
 	"runtime"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 )
 
@@ -26,8 +27,8 @@ type SystemMetrics struct {
 	} `json:"memory_stats"`
 
 	// 性能指标
-	RequestCount   int64   `json:"request_count"`
-	AverageLatency float64 `json:"average_latency"`
+	RequestCount   atomic.Int64 `json:"request_count"`
+	AverageLatency float64      `json:"average_latency"`
 
 	// 流量统计
 	TotalBytesIn  int64 `json:"total_bytes_in"`
@@ -44,16 +45,26 @@ type SystemMetrics struct {
 
 	// 热门引用来源
 	TopReferers map[string]int64 `json:"top_referers"`
+
+	// 添加性能监控指标
+	GCStats struct {
+		NumGC      uint32  `json:"num_gc"`
+		PauseTotal float64 `json:"pause_total"`
+		PauseAvg   float64 `json:"pause_avg"`
+	} `json:"gc_stats"`
+
+	CPUUsage    float64 `json:"cpu_usage"`
+	ThreadCount int     `json:"thread_count"`
 }
 
 type RequestLog struct {
-	Time       time.Time `json:"time"`
-	Path       string    `json:"path"`
-	Method     string    `json:"method"`
-	StatusCode int       `json:"status_code"`
-	Latency    float64   `json:"latency"`
-	IP         string    `json:"ip"`
-	Referer    string    `json:"referer"`
+	Time       int64   `json:"time"`   // 使用 Unix 时间戳
+	Path       string  `json:"path"`   // 考虑使用字符串池
+	Method     string  `json:"method"` // 使用常量池
+	StatusCode int     `json:"status_code"`
+	Latency    float64 `json:"latency"` // 改回 float64，保持一致性
+	IP         string  `json:"ip"`
+	Referer    string  `json:"referer"`
 }
 
 var (
@@ -101,10 +112,13 @@ func formatLatency(microseconds float64) string {
 }
 
 func LogRequest(log RequestLog) {
-	mu.Lock()
-	defer mu.Unlock()
+	metrics.RequestCount.Add(1)
 
-	metrics.RequestCount++
+	// 使用分段锁减少锁竞争
+	bucket := getBucket(log.Path)
+	bucket.mu.Lock()
+	defer bucket.mu.Unlock()
+
 	metrics.StatusCodes[log.StatusCode]++
 
 	// 处理 referer，只保留域名
@@ -131,4 +145,26 @@ func LogRequest(log RequestLog) {
 			metrics.RecentRequests = metrics.RecentRequests[:100]
 		}
 	}
+}
+
+// 添加字符串池
+var stringPool = sync.Pool{
+	New: func() interface{} {
+		return new(string)
+	},
+}
+
+// 添加分段锁结构
+type bucket struct {
+	mu sync.Mutex
+}
+
+var buckets = make([]bucket, 32)
+
+func getBucket(path string) *bucket {
+	hash := uint32(0)
+	for i := 0; i < len(path); i++ {
+		hash = hash*31 + uint32(path[i])
+	}
+	return &buckets[hash%32]
 }

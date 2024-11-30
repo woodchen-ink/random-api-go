@@ -13,11 +13,19 @@ import (
 	"random-api-go/utils"
 	"strings"
 	"sync"
+	"time"
 )
+
+type CSVCache struct {
+	selector  *models.URLSelector
+	lastCheck time.Time
+	mu        sync.RWMutex
+}
 
 var (
 	CSVPathsCache map[string]map[string]string
-	csvCache      = make(map[string]*models.URLSelector)
+	csvCache      = make(map[string]*CSVCache)
+	cacheTTL      = 1 * time.Hour
 	Mu            sync.RWMutex
 )
 
@@ -121,6 +129,31 @@ func LoadCSVPaths() error {
 }
 
 func GetCSVContent(path string) (*models.URLSelector, error) {
+	cache, ok := csvCache[path]
+	if ok {
+		cache.mu.RLock()
+		if time.Since(cache.lastCheck) < cacheTTL {
+			defer cache.mu.RUnlock()
+			return cache.selector, nil
+		}
+		cache.mu.RUnlock()
+	}
+
+	// 更新缓存
+	selector, err := loadCSVContent(path)
+	if err != nil {
+		return nil, err
+	}
+
+	cache = &CSVCache{
+		selector:  selector,
+		lastCheck: time.Now(),
+	}
+	csvCache[path] = cache
+	return selector, nil
+}
+
+func loadCSVContent(path string) (*models.URLSelector, error) {
 	// log.Printf("开始获取CSV内容: %s", path)
 
 	Mu.RLock()
@@ -129,7 +162,7 @@ func GetCSVContent(path string) (*models.URLSelector, error) {
 
 	if exists {
 		// log.Printf("从缓存中获取到CSV内容: %s", path)
-		return selector, nil
+		return selector.selector, nil
 	}
 
 	var fileContent []byte
@@ -196,12 +229,14 @@ func GetCSVContent(path string) (*models.URLSelector, error) {
 
 	log.Printf("处理后得到 %d 个唯一URL", len(fileArray))
 
-	selector = models.NewURLSelector(fileArray)
+	urlSelector := models.NewURLSelector(fileArray)
 
 	Mu.Lock()
-	csvCache[path] = selector
+	csvCache[path] = &CSVCache{
+		selector:  urlSelector,
+		lastCheck: time.Now(),
+	}
 	Mu.Unlock()
 
-	log.Printf("CSV内容已缓存: %s", path)
-	return selector, nil
+	return urlSelector, nil
 }
