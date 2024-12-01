@@ -80,13 +80,13 @@ jobs:
             unzip -o /tmp/public.zip -d /tmp/public_temp
 
             # 删除目标目录中的现有文件
-            rm -rf /opt/1panel/docker/compose/random-api-go/public/*
+            rm -rf /opt/1panel/docker/compose/random-api-go/data/public/*
 
             # 移动新文件到目标目录
-            mv -f /tmp/public_temp/public/* /opt/1panel/docker/compose/random-api-go/public/
+            mv -f /tmp/public_temp/public/* /opt/1panel/docker/compose/random-api-go/data/public/
 
             # 设置目录及其子文件的所有权和权限
-            chmod -R 0755 /opt/1panel/docker/compose/random-api-go/public
+            chmod -R 0755 /opt/1panel/docker/compose/random-api-go/data/public
 
             # 清理临时文件
             rm /tmp/public.zip
