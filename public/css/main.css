@@ -352,38 +352,6 @@ td a:hover {
     color: #2196f3;
 }
 
-.referers-list {
-    margin-top: 15px;
-    display: grid;
-    gap: 8px;
-    width: 100%;
-}
-
-.referer-item {
-    background: rgba(255, 255, 255, 0.05);
-    padding: 10px 15px;
-    border-radius: 6px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-}
-
-.referer {
-    color: #999;
-    max-width: 70%;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-}
-
-.count {
-    color: #2196f3;
-    font-weight: 500;
-    padding: 2px 8px;
-    background: rgba(33, 150, 243, 0.1);
-    border-radius: 4px;
-}
-
 .error-message {
     background: rgba(255, 0, 0, 0.1);
     color: #ff4444;
@@ -411,10 +379,6 @@ td a:hover {
     
     .metric-value {
         font-size: 1em;
-    }
-    
-    .referer {
-        max-width: 60%;
     }
 }
 
