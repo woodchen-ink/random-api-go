@@ -286,6 +286,23 @@
                                 </div>
                             </div>
                         </div>
+                        ${Object.keys(data.top_referers).length > 0 ? `
+                            <div class="stats-summary">
+                                <div class="stats-header">
+                                    <h2>🔗 访问来源</h2>
+                                </div>
+                                <div class="referers-list">
+                                    ${Object.entries(data.top_referers)
+                                        .sort(([,a], [,b]) => b - a)
+                                        .map(([referer, count]) => `
+                                            <div class="referer-item">
+                                                <span class="referer">${referer || '直接访问'}</span>
+                                                <span class="count">${count}</span>
+                                            </div>
+                                        `).join('')}
+                                </div>
+                            </div>
+                        ` : ''}
                     </div>
                 `;
                 
