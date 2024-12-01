@@ -30,6 +30,7 @@ func MetricsMiddleware(next http.Handler) http.Handler {
 			StatusCode: rw.statusCode,
 			Latency:    float64(duration.Microseconds()) / 1000,
 			IP:         utils.GetRealIP(r),
+			Referer:    r.Referer(),
 		})
 	})
 }

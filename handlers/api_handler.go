@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	"net/url"
 	"random-api-go/monitoring"
 	"random-api-go/services"
 	"random-api-go/stats"
@@ -26,18 +25,6 @@ func InitializeHandlers(sm *stats.StatsManager) error {
 func HandleAPIRequest(w http.ResponseWriter, r *http.Request) {
 	start := time.Now()
 	realIP := utils.GetRealIP(r)
-	referer := r.Referer()
-
-	// 修改这部分,获取完整的referer信息
-	sourceInfo := "direct"
-	if referer != "" {
-		if parsedURL, err := url.Parse(referer); err == nil {
-			sourceInfo = parsedURL.Host + parsedURL.Path
-			if parsedURL.RawQuery != "" {
-				sourceInfo += "?" + parsedURL.RawQuery
-			}
-		}
-	}
 
 	path := strings.TrimPrefix(r.URL.Path, "/")
 	pathSegments := strings.Split(path, "/")
@@ -50,7 +37,7 @@ func HandleAPIRequest(w http.ResponseWriter, r *http.Request) {
 			StatusCode: http.StatusNotFound,
 			Latency:    float64(time.Since(start).Microseconds()) / 1000,
 			IP:         realIP,
-			Referer:    sourceInfo,
+			Referer:    r.Referer(),
 		})
 		http.NotFound(w, r)
 		return
@@ -96,16 +83,16 @@ func HandleAPIRequest(w http.ResponseWriter, r *http.Request) {
 		StatusCode: http.StatusFound,
 		Latency:    float64(duration.Microseconds()) / 1000, // 转换为毫秒
 		IP:         realIP,
-		Referer:    sourceInfo,
+		Referer:    r.Referer(),
 	})
 
 	log.Printf(" %-12s | %-15s | %-6s | %-20s | %-20s | %-50s",
-		duration,   // 持续时间
-		realIP,     // 真实IP
-		r.Method,   // HTTP方法
-		r.URL.Path, // 请求路径
-		sourceInfo, // 来源信息
-		randomURL,  // 重定向URL
+		duration,    // 持续时间
+		realIP,      // 真实IP
+		r.Method,    // HTTP方法
+		r.URL.Path,  // 请求路径
+		r.Referer(), // 来源信息
+		randomURL,   // 重定向URL
 	)
 
 	http.Redirect(w, r, randomURL, http.StatusFound)

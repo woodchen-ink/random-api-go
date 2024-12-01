@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	"net/url"
 	"random-api-go/monitoring"
 	"random-api-go/router"
 	"random-api-go/services"
@@ -39,17 +38,6 @@ func (h *Handlers) HandleAPIRequest(w http.ResponseWriter, r *http.Request) {
 		start := time.Now()
 		realIP := utils.GetRealIP(r)
 
-		// 获取并处理 referer
-		sourceInfo := "direct"
-		if referer := r.Referer(); referer != "" {
-			if parsedURL, err := url.Parse(referer); err == nil {
-				sourceInfo = parsedURL.Host + parsedURL.Path
-				if parsedURL.RawQuery != "" {
-					sourceInfo += "?" + parsedURL.RawQuery
-				}
-			}
-		}
-
 		path := strings.TrimPrefix(r.URL.Path, "/")
 		pathSegments := strings.Split(path, "/")
 
@@ -61,7 +49,7 @@ func (h *Handlers) HandleAPIRequest(w http.ResponseWriter, r *http.Request) {
 				StatusCode: http.StatusNotFound,
 				Latency:    float64(time.Since(start).Microseconds()) / 1000,
 				IP:         realIP,
-				Referer:    sourceInfo,
+				Referer:    r.Referer(),
 			})
 			resultChan <- result{err: fmt.Errorf("not found")}
 			return
@@ -82,7 +70,7 @@ func (h *Handlers) HandleAPIRequest(w http.ResponseWriter, r *http.Request) {
 				StatusCode: http.StatusNotFound,
 				Latency:    float64(time.Since(start).Microseconds()) / 1000,
 				IP:         realIP,
-				Referer:    sourceInfo,
+				Referer:    r.Referer(),
 			})
 			resultChan <- result{err: fmt.Errorf("not found")}
 			return
@@ -98,7 +86,7 @@ func (h *Handlers) HandleAPIRequest(w http.ResponseWriter, r *http.Request) {
 				StatusCode: http.StatusInternalServerError,
 				Latency:    float64(time.Since(start).Microseconds()) / 1000,
 				IP:         realIP,
-				Referer:    sourceInfo,
+				Referer:    r.Referer(),
 			})
 			resultChan <- result{err: err}
 			return
@@ -112,7 +100,7 @@ func (h *Handlers) HandleAPIRequest(w http.ResponseWriter, r *http.Request) {
 				StatusCode: http.StatusNotFound,
 				Latency:    float64(time.Since(start).Microseconds()) / 1000,
 				IP:         realIP,
-				Referer:    sourceInfo,
+				Referer:    r.Referer(),
 			})
 			resultChan <- result{err: fmt.Errorf("no content available")}
 			return
@@ -130,7 +118,7 @@ func (h *Handlers) HandleAPIRequest(w http.ResponseWriter, r *http.Request) {
 			StatusCode: http.StatusFound,
 			Latency:    float64(duration.Microseconds()) / 1000,
 			IP:         realIP,
-			Referer:    sourceInfo,
+			Referer:    r.Referer(),
 		})
 
 		log.Printf(" %-12s | %-15s | %-6s | %-20s | %-20s | %-50s",
@@ -138,7 +126,7 @@ func (h *Handlers) HandleAPIRequest(w http.ResponseWriter, r *http.Request) {
 			realIP,
 			r.Method,
 			r.URL.Path,
-			sourceInfo,
+			r.Referer(),
 			randomURL,
 		)
 
