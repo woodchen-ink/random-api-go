@@ -154,14 +154,11 @@ func GetCSVContent(path string) (*models.URLSelector, error) {
 }
 
 func loadCSVContent(path string) (*models.URLSelector, error) {
-	// log.Printf("开始获取CSV内容: %s", path)
-
 	Mu.RLock()
 	selector, exists := csvCache[path]
 	Mu.RUnlock()
 
 	if exists {
-		// log.Printf("从缓存中获取到CSV内容: %s", path)
 		return selector.selector, nil
 	}
 
@@ -217,17 +214,49 @@ func loadCSVContent(path string) (*models.URLSelector, error) {
 	lines := strings.Split(string(fileContent), "\n")
 	log.Printf("CSV文件包含 %d 行", len(lines))
 
+	if len(lines) == 0 {
+		return nil, fmt.Errorf("CSV文件为空")
+	}
+
 	uniqueURLs := make(map[string]bool)
 	var fileArray []string
-	for _, line := range lines {
+	var invalidLines []string
+
+	for i, line := range lines {
 		trimmed := strings.TrimSpace(line)
-		if trimmed != "" && !strings.HasPrefix(trimmed, "#") && !uniqueURLs[trimmed] {
+		if trimmed == "" || strings.HasPrefix(trimmed, "#") {
+			continue
+		}
+
+		// 验证URL格式
+		if !strings.HasPrefix(trimmed, "http://") && !strings.HasPrefix(trimmed, "https://") {
+			invalidLines = append(invalidLines, fmt.Sprintf("第%d行: %s (无效的URL格式)", i+1, trimmed))
+			continue
+		}
+
+		// 检查URL是否包含非法字符
+		if strings.ContainsAny(trimmed, "\"'") {
+			invalidLines = append(invalidLines, fmt.Sprintf("第%d行: %s (URL包含非法字符)", i+1, trimmed))
+			continue
+		}
+
+		if !uniqueURLs[trimmed] {
 			fileArray = append(fileArray, trimmed)
 			uniqueURLs[trimmed] = true
 		}
 	}
 
-	log.Printf("处理后得到 %d 个唯一URL", len(fileArray))
+	if len(invalidLines) > 0 {
+		errMsg := "发现无效的URL格式:\n" + strings.Join(invalidLines, "\n")
+		log.Printf("%s", errMsg)
+		return nil, fmt.Errorf("%s", errMsg)
+	}
+
+	if len(fileArray) == 0 {
+		return nil, fmt.Errorf("CSV文件中没有有效的URL")
+	}
+
+	log.Printf("处理后得到 %d 个有效的唯一URL", len(fileArray))
 
 	urlSelector := models.NewURLSelector(fileArray)
 
