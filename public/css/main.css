@@ -14,7 +14,7 @@ body::before {
   left: 0;
   width: 100%;
   height: 100%;
-  background-image: url(https://random-api.czl.net/pic/all);
+  background-image: url(https://random-api.czl.net/pic/normal);
   background-size: cover;
   background-position: center;
   z-index: -1;
