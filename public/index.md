@@ -9,7 +9,7 @@
 
 ## 部署和原理
 
-请见我的帖子：[https://q58.pro/t/topic/127](https://q58.pro/t/topic/127)
+请见我的帖子：[https://www.q58.club/t/topic/127](https://www.q58.club/t/topic/127)
 
 ## 讨论
 
