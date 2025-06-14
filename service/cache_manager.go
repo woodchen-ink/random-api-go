@@ -1,9 +1,9 @@
-package services
+package service
 
 import (
 	"log"
 	"random-api-go/database"
-	"random-api-go/models"
+	"random-api-go/model"
 	"sync"
 	"time"
 )
@@ -61,7 +61,7 @@ func (cm *CacheManager) InvalidateMemoryCache(key string) {
 
 // GetFromDBCache 从数据库缓存获取URL
 func (cm *CacheManager) GetFromDBCache(dataSourceID uint) ([]string, error) {
-	var cachedURLs []models.CachedURL
+	var cachedURLs []model.CachedURL
 	if err := database.DB.Where("data_source_id = ? AND expires_at > ?", dataSourceID, time.Now()).
 		Find(&cachedURLs).Error; err != nil {
 		return nil, err
@@ -78,14 +78,14 @@ func (cm *CacheManager) GetFromDBCache(dataSourceID uint) ([]string, error) {
 // SetDBCache 设置数据库缓存
 func (cm *CacheManager) SetDBCache(dataSourceID uint, urls []string, duration time.Duration) error {
 	// 先删除旧的缓存
-	if err := database.DB.Where("data_source_id = ?", dataSourceID).Delete(&models.CachedURL{}).Error; err != nil {
+	if err := database.DB.Where("data_source_id = ?", dataSourceID).Delete(&model.CachedURL{}).Error; err != nil {
 		log.Printf("Failed to delete old cache for data source %d: %v", dataSourceID, err)
 	}
 
 	// 插入新的缓存
 	expiresAt := time.Now().Add(duration)
 	for _, url := range urls {
-		cachedURL := models.CachedURL{
+		cachedURL := model.CachedURL{
 			DataSourceID: dataSourceID,
 			OriginalURL:  url,
 			FinalURL:     url,
@@ -112,7 +112,7 @@ func (cm *CacheManager) UpdateDBCacheIfChanged(dataSourceID uint, newURLs []stri
 	if cm.urlSlicesEqual(existingURLs, newURLs) {
 		// 数据没有变化，只更新过期时间
 		expiresAt := time.Now().Add(duration)
-		if err := database.DB.Model(&models.CachedURL{}).
+		if err := database.DB.Model(&model.CachedURL{}).
 			Where("data_source_id = ?", dataSourceID).
 			Update("expires_at", expiresAt).Error; err != nil {
 			log.Printf("Failed to update cache expiry for data source %d: %v", dataSourceID, err)
@@ -127,7 +127,7 @@ func (cm *CacheManager) UpdateDBCacheIfChanged(dataSourceID uint, newURLs []stri
 // InvalidateMemoryCacheForDataSource 清理与数据源相关的内存缓存
 func (cm *CacheManager) InvalidateMemoryCacheForDataSource(dataSourceID uint) error {
 	// 获取数据源信息
-	var dataSource models.DataSource
+	var dataSource model.DataSource
 	if err := database.DB.Preload("Endpoint").First(&dataSource, dataSourceID).Error; err != nil {
 		return err
 	}
@@ -169,7 +169,7 @@ func (cm *CacheManager) cleanupExpiredCache() {
 		now := time.Now()
 
 		// 内存缓存不再自动过期，只清理数据库中的过期缓存
-		if err := database.DB.Where("expires_at < ?", now).Delete(&models.CachedURL{}).Error; err != nil {
+		if err := database.DB.Where("expires_at < ?", now).Delete(&model.CachedURL{}).Error; err != nil {
 			log.Printf("Failed to cleanup expired cache: %v", err)
 		}
 	}

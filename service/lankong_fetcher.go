@@ -1,4 +1,4 @@
-package services
+package service
 
 import (
 	"encoding/json"
@@ -6,7 +6,7 @@ import (
 	"io"
 	"log"
 	"net/http"
-	"random-api-go/models"
+	"random-api-go/model"
 	"time"
 )
 
@@ -40,7 +40,7 @@ type LankongResponse struct {
 }
 
 // FetchURLs 从兰空图床获取URL列表
-func (lf *LankongFetcher) FetchURLs(config *models.LankongConfig) ([]string, error) {
+func (lf *LankongFetcher) FetchURLs(config *model.LankongConfig) ([]string, error) {
 	var allURLs []string
 	baseURL := config.BaseURL
 	if baseURL == "" {

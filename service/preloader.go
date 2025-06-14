@@ -1,9 +1,9 @@
-package services
+package service
 
 import (
 	"log"
 	"random-api-go/database"
-	"random-api-go/models"
+	"random-api-go/model"
 	"sync"
 	"time"
 )
@@ -55,7 +55,7 @@ func (p *Preloader) Stop() {
 }
 
 // PreloadDataSourceOnSave 在保存数据源时预加载数据
-func (p *Preloader) PreloadDataSourceOnSave(dataSource *models.DataSource) {
+func (p *Preloader) PreloadDataSourceOnSave(dataSource *model.DataSource) {
 	// API类型的数据源不需要预加载，使用实时请求
 	if dataSource.Type == "api_get" || dataSource.Type == "api_post" {
 		log.Printf("API数据源 %d (%s) 使用实时请求，跳过预加载", dataSource.ID, dataSource.Type)
@@ -75,7 +75,7 @@ func (p *Preloader) PreloadDataSourceOnSave(dataSource *models.DataSource) {
 }
 
 // PreloadEndpointOnSave 在保存端点时预加载所有相关数据源
-func (p *Preloader) PreloadEndpointOnSave(endpoint *models.APIEndpoint) {
+func (p *Preloader) PreloadEndpointOnSave(endpoint *model.APIEndpoint) {
 	// 异步预加载，避免阻塞保存操作
 	go func() {
 		log.Printf("开始预加载端点 %d 的所有数据源", endpoint.ID)
@@ -93,7 +93,7 @@ func (p *Preloader) PreloadEndpointOnSave(endpoint *models.APIEndpoint) {
 			}
 
 			wg.Add(1)
-			go func(ds models.DataSource) {
+			go func(ds model.DataSource) {
 				defer wg.Done()
 
 				if err := p.dataSourceFetcher.PreloadDataSource(&ds); err != nil {
@@ -112,7 +112,7 @@ func (p *Preloader) PreloadEndpointOnSave(endpoint *models.APIEndpoint) {
 
 // RefreshDataSource 手动刷新指定数据源
 func (p *Preloader) RefreshDataSource(dataSourceID uint) error {
-	var dataSource models.DataSource
+	var dataSource model.DataSource
 	if err := database.DB.First(&dataSource, dataSourceID).Error; err != nil {
 		return err
 	}
@@ -123,7 +123,7 @@ func (p *Preloader) RefreshDataSource(dataSourceID uint) error {
 
 // RefreshEndpoint 手动刷新指定端点的所有数据源
 func (p *Preloader) RefreshEndpoint(endpointID uint) error {
-	var endpoint models.APIEndpoint
+	var endpoint model.APIEndpoint
 	if err := database.DB.Preload("DataSources").First(&endpoint, endpointID).Error; err != nil {
 		return err
 	}
@@ -145,7 +145,7 @@ func (p *Preloader) RefreshEndpoint(endpointID uint) error {
 		}
 
 		wg.Add(1)
-		go func(ds models.DataSource) {
+		go func(ds model.DataSource) {
 			defer wg.Done()
 
 			if err := p.dataSourceFetcher.PreloadDataSource(&ds); err != nil {
@@ -187,7 +187,7 @@ func (p *Preloader) checkAndRefreshExpiredData() {
 	log.Println("开始检查过期数据...")
 
 	// 获取所有活跃的数据源
-	var dataSources []models.DataSource
+	var dataSources []model.DataSource
 	if err := database.DB.Where("is_active = ?", true).Find(&dataSources).Error; err != nil {
 		log.Printf("获取数据源列表失败: %v", err)
 		return
@@ -208,7 +208,7 @@ func (p *Preloader) checkAndRefreshExpiredData() {
 			// 没有缓存数据，需要刷新
 			refreshCount++
 			wg.Add(1)
-			go func(ds models.DataSource) {
+			go func(ds model.DataSource) {
 				defer wg.Done()
 				p.refreshDataSourceAsync(&ds)
 			}(dataSource)
@@ -219,7 +219,7 @@ func (p *Preloader) checkAndRefreshExpiredData() {
 		if p.shouldPeriodicRefresh(&dataSource) {
 			refreshCount++
 			wg.Add(1)
-			go func(ds models.DataSource) {
+			go func(ds model.DataSource) {
 				defer wg.Done()
 				p.refreshDataSourceAsync(&ds)
 			}(dataSource)
@@ -236,7 +236,7 @@ func (p *Preloader) checkAndRefreshExpiredData() {
 }
 
 // shouldPeriodicRefresh 判断是否需要定期刷新
-func (p *Preloader) shouldPeriodicRefresh(dataSource *models.DataSource) bool {
+func (p *Preloader) shouldPeriodicRefresh(dataSource *model.DataSource) bool {
 	// 手动数据、API数据和端点数据不需要定期刷新
 	if dataSource.Type == "manual" || dataSource.Type == "api_get" || dataSource.Type == "api_post" || dataSource.Type == "endpoint" {
 		return false
@@ -260,7 +260,7 @@ func (p *Preloader) shouldPeriodicRefresh(dataSource *models.DataSource) bool {
 }
 
 // refreshDataSourceAsync 异步刷新数据源
-func (p *Preloader) refreshDataSourceAsync(dataSource *models.DataSource) {
+func (p *Preloader) refreshDataSourceAsync(dataSource *model.DataSource) {
 	if err := p.dataSourceFetcher.PreloadDataSource(dataSource); err != nil {
 		log.Printf("定期刷新数据源 %d 失败: %v", dataSource.ID, err)
 	} else {

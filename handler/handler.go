@@ -1,4 +1,4 @@
-package handlers
+package handler
 
 import (
 	"context"
@@ -8,7 +8,7 @@ import (
 	"net/http"
 	"random-api-go/database"
 	"random-api-go/monitoring"
-	"random-api-go/services"
+	"random-api-go/service"
 	"random-api-go/stats"
 	"random-api-go/utils"
 	"strings"
@@ -22,7 +22,7 @@ type Router interface {
 
 type Handlers struct {
 	Stats           *stats.StatsManager
-	endpointService *services.EndpointService
+	endpointService *service.EndpointService
 	urlStatsCache   map[string]struct {
 		TotalURLs int `json:"total_urls"`
 	}
@@ -57,7 +57,7 @@ func (h *Handlers) HandleAPIRequest(w http.ResponseWriter, r *http.Request) {
 
 		// 初始化端点服务
 		if h.endpointService == nil {
-			h.endpointService = services.GetEndpointService()
+			h.endpointService = service.GetEndpointService()
 		}
 
 		// 使用新的端点服务
@@ -140,7 +140,7 @@ func (h *Handlers) HandlePublicEndpoints(w http.ResponseWriter, r *http.Request)
 
 	// 使用端点服务获取端点信息
 	if h.endpointService == nil {
-		h.endpointService = services.GetEndpointService()
+		h.endpointService = service.GetEndpointService()
 	}
 
 	endpoints, err := h.endpointService.ListEndpoints()
@@ -207,7 +207,7 @@ func (h *Handlers) HandleURLStats(w http.ResponseWriter, r *http.Request) {
 
 	// 缓存过期或不存在，重新计算
 	if h.endpointService == nil {
-		h.endpointService = services.GetEndpointService()
+		h.endpointService = service.GetEndpointService()
 	}
 
 	endpoints, err := h.endpointService.ListEndpoints()

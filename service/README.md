@@ -48,7 +48,7 @@
 service := GetEndpointService()
 
 // 创建端点（会自动预加载）
-endpoint := &models.APIEndpoint{...}
+endpoint := &model.APIEndpoint{...}
 service.CreateEndpoint(endpoint)
 
 // 获取随机URL（优先使用缓存）

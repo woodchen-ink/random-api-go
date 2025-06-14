@@ -1,9 +1,9 @@
-package handlers
+package handler
 
 import (
 	"encoding/json"
 	"net/http"
-	"random-api-go/services"
+	"random-api-go/service"
 )
 
 func HandleURLStats(w http.ResponseWriter, r *http.Request) {
@@ -13,7 +13,7 @@ func HandleURLStats(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	stats := services.GetURLCounts()
+	stats := service.GetURLCounts()
 
 	if err := json.NewEncoder(w).Encode(stats); err != nil {
 		http.Error(w, "Error encoding response", http.StatusInternalServerError)

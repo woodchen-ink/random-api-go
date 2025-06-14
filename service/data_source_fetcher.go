@@ -1,10 +1,10 @@
-package services
+package service
 
 import (
 	"encoding/json"
 	"fmt"
 	"log"
-	"random-api-go/models"
+	"random-api-go/model"
 	"strings"
 	"time"
 )
@@ -26,7 +26,7 @@ func NewDataSourceFetcher(cacheManager *CacheManager) *DataSourceFetcher {
 }
 
 // FetchURLs 从数据源获取URL列表
-func (dsf *DataSourceFetcher) FetchURLs(dataSource *models.DataSource) ([]string, error) {
+func (dsf *DataSourceFetcher) FetchURLs(dataSource *model.DataSource) ([]string, error) {
 	// API类型的数据源直接实时请求，不使用缓存
 	if dataSource.Type == "api_get" || dataSource.Type == "api_post" {
 		log.Printf("实时请求API数据源 (类型: %s, ID: %d)", dataSource.Type, dataSource.ID)
@@ -90,8 +90,8 @@ func (dsf *DataSourceFetcher) FetchURLs(dataSource *models.DataSource) ([]string
 }
 
 // fetchLankongURLs 获取兰空图床URL
-func (dsf *DataSourceFetcher) fetchLankongURLs(dataSource *models.DataSource) ([]string, error) {
-	var config models.LankongConfig
+func (dsf *DataSourceFetcher) fetchLankongURLs(dataSource *model.DataSource) ([]string, error) {
+	var config model.LankongConfig
 	if err := json.Unmarshal([]byte(dataSource.Config), &config); err != nil {
 		return nil, fmt.Errorf("invalid lankong config: %w", err)
 	}
@@ -100,12 +100,12 @@ func (dsf *DataSourceFetcher) fetchLankongURLs(dataSource *models.DataSource) ([
 }
 
 // fetchManualURLs 获取手动配置的URL
-func (dsf *DataSourceFetcher) fetchManualURLs(dataSource *models.DataSource) ([]string, error) {
+func (dsf *DataSourceFetcher) fetchManualURLs(dataSource *model.DataSource) ([]string, error) {
 	// 手动配置可能是JSON格式或者纯文本格式
 	config := strings.TrimSpace(dataSource.Config)
 
 	// 尝试解析为JSON格式
-	var manualConfig models.ManualConfig
+	var manualConfig model.ManualConfig
 	if err := json.Unmarshal([]byte(config), &manualConfig); err == nil {
 		return manualConfig.URLs, nil
 	}
@@ -124,8 +124,8 @@ func (dsf *DataSourceFetcher) fetchManualURLs(dataSource *models.DataSource) ([]
 }
 
 // fetchAPIURLs 获取API接口URL (实时请求，不缓存)
-func (dsf *DataSourceFetcher) fetchAPIURLs(dataSource *models.DataSource) ([]string, error) {
-	var config models.APIConfig
+func (dsf *DataSourceFetcher) fetchAPIURLs(dataSource *model.DataSource) ([]string, error) {
+	var config model.APIConfig
 	if err := json.Unmarshal([]byte(dataSource.Config), &config); err != nil {
 		return nil, fmt.Errorf("invalid API config: %w", err)
 	}
@@ -135,8 +135,8 @@ func (dsf *DataSourceFetcher) fetchAPIURLs(dataSource *models.DataSource) ([]str
 }
 
 // fetchEndpointURLs 获取端点URL (直接返回端点URL列表)
-func (dsf *DataSourceFetcher) fetchEndpointURLs(dataSource *models.DataSource) ([]string, error) {
-	var config models.EndpointConfig
+func (dsf *DataSourceFetcher) fetchEndpointURLs(dataSource *model.DataSource) ([]string, error) {
+	var config model.EndpointConfig
 	if err := json.Unmarshal([]byte(dataSource.Config), &config); err != nil {
 		return nil, fmt.Errorf("invalid endpoint config: %w", err)
 	}
@@ -157,7 +157,7 @@ func (dsf *DataSourceFetcher) fetchEndpointURLs(dataSource *models.DataSource) (
 }
 
 // updateDataSourceSyncTime 更新数据源的同步时间
-func (dsf *DataSourceFetcher) updateDataSourceSyncTime(dataSource *models.DataSource) error {
+func (dsf *DataSourceFetcher) updateDataSourceSyncTime(dataSource *model.DataSource) error {
 	// 这里需要导入database包来更新数据库
 	// 为了避免循环依赖，我们通过回调或者接口来处理
 	// 暂时先记录日志，具体实现在主服务中处理
@@ -166,7 +166,7 @@ func (dsf *DataSourceFetcher) updateDataSourceSyncTime(dataSource *models.DataSo
 }
 
 // PreloadDataSource 预加载数据源（在保存时调用）
-func (dsf *DataSourceFetcher) PreloadDataSource(dataSource *models.DataSource) error {
+func (dsf *DataSourceFetcher) PreloadDataSource(dataSource *model.DataSource) error {
 	log.Printf("开始预加载数据源 (类型: %s, ID: %d)", dataSource.Type, dataSource.ID)
 
 	_, err := dsf.FetchURLs(dataSource)

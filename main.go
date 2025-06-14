@@ -11,10 +11,10 @@ import (
 	"path/filepath"
 	"random-api-go/config"
 	"random-api-go/database"
-	"random-api-go/handlers"
+	"random-api-go/handler"
 	"random-api-go/logging"
 	"random-api-go/router"
-	"random-api-go/services"
+	"random-api-go/service"
 	"random-api-go/stats"
 	"syscall"
 	"time"
@@ -24,8 +24,8 @@ type App struct {
 	server        *http.Server
 	router        *router.Router
 	Stats         *stats.StatsManager
-	adminHandler  *handlers.AdminHandler
-	staticHandler *handlers.StaticHandler
+	adminHandler  *handler.AdminHandler
+	staticHandler *handler.StaticHandler
 }
 
 func NewApp() *App {
@@ -62,10 +62,10 @@ func (a *App) Initialize() error {
 	a.Stats = stats.NewStatsManager(statsFile)
 
 	// 初始化端点服务
-	services.GetEndpointService()
+	service.GetEndpointService()
 
 	// 创建管理后台处理器
-	a.adminHandler = handlers.NewAdminHandler()
+	a.adminHandler = handler.NewAdminHandler()
 
 	// 创建静态文件处理器
 	staticDir := "./web/out"
@@ -76,12 +76,12 @@ func (a *App) Initialize() error {
 		if err != nil {
 			return fmt.Errorf("failed to get absolute path for static directory: %w", err)
 		}
-		a.staticHandler = handlers.NewStaticHandler(absStaticDir)
+		a.staticHandler = handler.NewStaticHandler(absStaticDir)
 		log.Printf("Static file serving enabled from: %s", absStaticDir)
 	}
 
 	// 创建 handlers
-	handlers := handlers.NewHandlers(a.Stats)
+	handlers := handler.NewHandlers(a.Stats)
 
 	// 统一设置所有路由
 	a.router.SetupAllRoutes(handlers, a.adminHandler, a.staticHandler)

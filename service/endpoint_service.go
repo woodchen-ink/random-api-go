@@ -1,11 +1,11 @@
-package services
+package service
 
 import (
 	"fmt"
 	"log"
 	"math/rand"
 	"random-api-go/database"
-	"random-api-go/models"
+	"random-api-go/model"
 	"strconv"
 	"strings"
 	"sync"
@@ -49,7 +49,7 @@ func GetEndpointService() *EndpointService {
 }
 
 // CreateEndpoint 创建API端点
-func (s *EndpointService) CreateEndpoint(endpoint *models.APIEndpoint) error {
+func (s *EndpointService) CreateEndpoint(endpoint *model.APIEndpoint) error {
 	if err := database.DB.Create(endpoint).Error; err != nil {
 		return fmt.Errorf("failed to create endpoint: %w", err)
 	}
@@ -64,8 +64,8 @@ func (s *EndpointService) CreateEndpoint(endpoint *models.APIEndpoint) error {
 }
 
 // GetEndpoint 获取API端点
-func (s *EndpointService) GetEndpoint(id uint) (*models.APIEndpoint, error) {
-	var endpoint models.APIEndpoint
+func (s *EndpointService) GetEndpoint(id uint) (*model.APIEndpoint, error) {
+	var endpoint model.APIEndpoint
 	if err := database.DB.Preload("DataSources").Preload("URLReplaceRules").First(&endpoint, id).Error; err != nil {
 		return nil, fmt.Errorf("failed to get endpoint: %w", err)
 	}
@@ -73,8 +73,8 @@ func (s *EndpointService) GetEndpoint(id uint) (*models.APIEndpoint, error) {
 }
 
 // GetEndpointByURL 根据URL获取端点
-func (s *EndpointService) GetEndpointByURL(url string) (*models.APIEndpoint, error) {
-	var endpoint models.APIEndpoint
+func (s *EndpointService) GetEndpointByURL(url string) (*model.APIEndpoint, error) {
+	var endpoint model.APIEndpoint
 	if err := database.DB.Preload("DataSources").Preload("URLReplaceRules").
 		Where("url = ? AND is_active = ?", url, true).First(&endpoint).Error; err != nil {
 		return nil, fmt.Errorf("failed to get endpoint by URL: %w", err)
@@ -83,8 +83,8 @@ func (s *EndpointService) GetEndpointByURL(url string) (*models.APIEndpoint, err
 }
 
 // ListEndpoints 列出所有端点
-func (s *EndpointService) ListEndpoints() ([]*models.APIEndpoint, error) {
-	var endpoints []*models.APIEndpoint
+func (s *EndpointService) ListEndpoints() ([]*model.APIEndpoint, error) {
+	var endpoints []*model.APIEndpoint
 	if err := database.DB.Preload("DataSources").Preload("URLReplaceRules").
 		Order("sort_order ASC, created_at DESC").Find(&endpoints).Error; err != nil {
 		return nil, fmt.Errorf("failed to list endpoints: %w", err)
@@ -93,7 +93,7 @@ func (s *EndpointService) ListEndpoints() ([]*models.APIEndpoint, error) {
 }
 
 // UpdateEndpoint 更新API端点
-func (s *EndpointService) UpdateEndpoint(endpoint *models.APIEndpoint) error {
+func (s *EndpointService) UpdateEndpoint(endpoint *model.APIEndpoint) error {
 	// 只更新指定字段，避免覆盖 created_at 和 sort_order 等字段
 	updates := map[string]interface{}{
 		"name":             endpoint.Name,
@@ -109,7 +109,7 @@ func (s *EndpointService) UpdateEndpoint(endpoint *models.APIEndpoint) error {
 		updates["sort_order"] = endpoint.SortOrder
 	}
 
-	if err := database.DB.Model(&models.APIEndpoint{}).Where("id = ?", endpoint.ID).Updates(updates).Error; err != nil {
+	if err := database.DB.Model(&model.APIEndpoint{}).Where("id = ?", endpoint.ID).Updates(updates).Error; err != nil {
 		return fmt.Errorf("failed to update endpoint: %w", err)
 	}
 
@@ -131,7 +131,7 @@ func (s *EndpointService) DeleteEndpoint(id uint) error {
 	}
 
 	// 删除相关的数据源和URL替换规则
-	if err := database.DB.Select("DataSources", "URLReplaceRules").Delete(&models.APIEndpoint{}, id).Error; err != nil {
+	if err := database.DB.Select("DataSources", "URLReplaceRules").Delete(&model.APIEndpoint{}, id).Error; err != nil {
 		return fmt.Errorf("failed to delete endpoint: %w", err)
 	}
 
@@ -169,9 +169,9 @@ func (s *EndpointService) GetRandomURL(url string) (string, error) {
 }
 
 // getRandomURLRealtime 实时获取随机URL（用于包含API数据源的端点）
-func (s *EndpointService) getRandomURLRealtime(endpoint *models.APIEndpoint) (string, error) {
+func (s *EndpointService) getRandomURLRealtime(endpoint *model.APIEndpoint) (string, error) {
 	// 收集所有激活的数据源
-	var activeDataSources []models.DataSource
+	var activeDataSources []model.DataSource
 	for _, dataSource := range endpoint.DataSources {
 		if dataSource.IsActive {
 			activeDataSources = append(activeDataSources, dataSource)
@@ -221,9 +221,9 @@ func (s *EndpointService) getRandomURLRealtime(endpoint *models.APIEndpoint) (st
 }
 
 // getRandomURLWithCache 使用缓存模式获取随机URL（先选择数据源）
-func (s *EndpointService) getRandomURLWithCache(endpoint *models.APIEndpoint) (string, error) {
+func (s *EndpointService) getRandomURLWithCache(endpoint *model.APIEndpoint) (string, error) {
 	// 收集所有激活的数据源
-	var activeDataSources []models.DataSource
+	var activeDataSources []model.DataSource
 	for _, dataSource := range endpoint.DataSources {
 		if dataSource.IsActive {
 			activeDataSources = append(activeDataSources, dataSource)
@@ -292,7 +292,7 @@ func (s *EndpointService) applyURLReplaceRules(url, endpointURL string) string {
 }
 
 // CreateDataSource 创建数据源
-func (s *EndpointService) CreateDataSource(dataSource *models.DataSource) error {
+func (s *EndpointService) CreateDataSource(dataSource *model.DataSource) error {
 	if err := database.DB.Create(dataSource).Error; err != nil {
 		return fmt.Errorf("failed to create data source: %w", err)
 	}
@@ -309,7 +309,7 @@ func (s *EndpointService) CreateDataSource(dataSource *models.DataSource) error 
 }
 
 // UpdateDataSource 更新数据源
-func (s *EndpointService) UpdateDataSource(dataSource *models.DataSource) error {
+func (s *EndpointService) UpdateDataSource(dataSource *model.DataSource) error {
 	if err := database.DB.Save(dataSource).Error; err != nil {
 		return fmt.Errorf("failed to update data source: %w", err)
 	}
@@ -328,7 +328,7 @@ func (s *EndpointService) UpdateDataSource(dataSource *models.DataSource) error 
 // DeleteDataSource 删除数据源
 func (s *EndpointService) DeleteDataSource(id uint) error {
 	// 先获取数据源信息
-	var dataSource models.DataSource
+	var dataSource model.DataSource
 	if err := database.DB.First(&dataSource, id).Error; err != nil {
 		return fmt.Errorf("failed to get data source: %w", err)
 	}
@@ -362,7 +362,7 @@ func (s *EndpointService) GetPreloader() *Preloader {
 }
 
 // GetDataSourceURLCount 获取数据源的URL数量
-func (s *EndpointService) GetDataSourceURLCount(dataSource *models.DataSource) (int, error) {
+func (s *EndpointService) GetDataSourceURLCount(dataSource *model.DataSource) (int, error) {
 	// 对于API类型和端点类型的数据源，返回1（因为每次都是实时请求）
 	if dataSource.Type == "api_get" || dataSource.Type == "api_post" || dataSource.Type == "endpoint" {
 		return 1, nil

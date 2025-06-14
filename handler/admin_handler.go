@@ -1,4 +1,4 @@
-package handlers
+package handler
 
 import (
 	"encoding/json"
@@ -9,8 +9,8 @@ import (
 	"net/url"
 	"random-api-go/config"
 	"random-api-go/database"
-	"random-api-go/models"
-	"random-api-go/services"
+	"random-api-go/model"
+	"random-api-go/service"
 	"strconv"
 	"strings"
 
@@ -19,13 +19,13 @@ import (
 
 // AdminHandler 管理后台处理器
 type AdminHandler struct {
-	endpointService *services.EndpointService
+	endpointService *service.EndpointService
 }
 
 // NewAdminHandler 创建管理后台处理器
 func NewAdminHandler() *AdminHandler {
 	return &AdminHandler{
-		endpointService: services.GetEndpointService(),
+		endpointService: service.GetEndpointService(),
 	}
 }
 
@@ -56,7 +56,7 @@ func (h *AdminHandler) CreateEndpoint(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var endpoint models.APIEndpoint
+	var endpoint model.APIEndpoint
 	if err := json.NewDecoder(r.Body).Decode(&endpoint); err != nil {
 		http.Error(w, fmt.Sprintf("Invalid JSON: %v", err), http.StatusBadRequest)
 		return
@@ -121,7 +121,7 @@ func (h *AdminHandler) UpdateEndpoint(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var endpoint models.APIEndpoint
+	var endpoint model.APIEndpoint
 	if err := json.NewDecoder(r.Body).Decode(&endpoint); err != nil {
 		http.Error(w, fmt.Sprintf("Invalid JSON: %v", err), http.StatusBadRequest)
 		return
@@ -173,7 +173,7 @@ func (h *AdminHandler) CreateDataSource(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	var dataSource models.DataSource
+	var dataSource model.DataSource
 	if err := json.NewDecoder(r.Body).Decode(&dataSource); err != nil {
 		http.Error(w, fmt.Sprintf("Invalid JSON: %v", err), http.StatusBadRequest)
 		return
@@ -228,7 +228,7 @@ func (h *AdminHandler) ListEndpointDataSources(w http.ResponseWriter, r *http.Re
 		return
 	}
 
-	var dataSources []models.DataSource
+	var dataSources []model.DataSource
 	if err := database.DB.Where("endpoint_id = ?", endpointID).Order("created_at DESC").Find(&dataSources).Error; err != nil {
 		http.Error(w, fmt.Sprintf("Failed to query data sources: %v", err), http.StatusInternalServerError)
 		return
@@ -259,7 +259,7 @@ func (h *AdminHandler) CreateEndpointDataSource(w http.ResponseWriter, r *http.R
 		return
 	}
 
-	var dataSource models.DataSource
+	var dataSource model.DataSource
 	if err := json.NewDecoder(r.Body).Decode(&dataSource); err != nil {
 		http.Error(w, fmt.Sprintf("Invalid JSON: %v", err), http.StatusBadRequest)
 		return
@@ -275,7 +275,7 @@ func (h *AdminHandler) CreateEndpointDataSource(w http.ResponseWriter, r *http.R
 	}
 
 	// 验证端点是否存在
-	var endpoint models.APIEndpoint
+	var endpoint model.APIEndpoint
 	if err := database.DB.First(&endpoint, endpointID).Error; err != nil {
 		if err == gorm.ErrRecordNotFound {
 			http.Error(w, "Endpoint not found", http.StatusNotFound)
@@ -330,7 +330,7 @@ func (h *AdminHandler) GetDataSource(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var dataSource models.DataSource
+	var dataSource model.DataSource
 	if err := database.DB.First(&dataSource, dataSourceID).Error; err != nil {
 		if err == gorm.ErrRecordNotFound {
 			http.Error(w, "Data source not found", http.StatusNotFound)
@@ -365,7 +365,7 @@ func (h *AdminHandler) UpdateDataSource(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	var dataSource models.DataSource
+	var dataSource model.DataSource
 	if err := database.DB.First(&dataSource, dataSourceID).Error; err != nil {
 		if err == gorm.ErrRecordNotFound {
 			http.Error(w, "Data source not found", http.StatusNotFound)
@@ -375,7 +375,7 @@ func (h *AdminHandler) UpdateDataSource(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	var updateData models.DataSource
+	var updateData model.DataSource
 	if err := json.NewDecoder(r.Body).Decode(&updateData); err != nil {
 		http.Error(w, fmt.Sprintf("Invalid JSON: %v", err), http.StatusBadRequest)
 		return
@@ -463,7 +463,7 @@ func (h *AdminHandler) SyncDataSource(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var dataSource models.DataSource
+	var dataSource model.DataSource
 	if err := database.DB.First(&dataSource, dataSourceID).Error; err != nil {
 		if err == gorm.ErrRecordNotFound {
 			http.Error(w, "Data source not found", http.StatusNotFound)
@@ -500,7 +500,7 @@ func (h *AdminHandler) ListURLReplaceRules(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	var rules []models.URLReplaceRule
+	var rules []model.URLReplaceRule
 	if err := database.DB.Preload("Endpoint").Order("created_at DESC").Find(&rules).Error; err != nil {
 		http.Error(w, fmt.Sprintf("Failed to query URL replace rules: %v", err), http.StatusInternalServerError)
 		return
@@ -520,7 +520,7 @@ func (h *AdminHandler) CreateURLReplaceRule(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	var rule models.URLReplaceRule
+	var rule model.URLReplaceRule
 	if err := json.NewDecoder(r.Body).Decode(&rule); err != nil {
 		http.Error(w, fmt.Sprintf("Invalid JSON: %v", err), http.StatusBadRequest)
 		return
@@ -575,7 +575,7 @@ func (h *AdminHandler) HandleURLReplaceRuleByID(w http.ResponseWriter, r *http.R
 
 // updateURLReplaceRule 更新URL替换规则
 func (h *AdminHandler) updateURLReplaceRule(w http.ResponseWriter, r *http.Request, ruleID uint) {
-	var rule models.URLReplaceRule
+	var rule model.URLReplaceRule
 	if err := json.NewDecoder(r.Body).Decode(&rule); err != nil {
 		http.Error(w, fmt.Sprintf("Invalid JSON: %v", err), http.StatusBadRequest)
 		return
@@ -588,7 +588,7 @@ func (h *AdminHandler) updateURLReplaceRule(w http.ResponseWriter, r *http.Reque
 	}
 
 	// 检查规则是否存在
-	var existingRule models.URLReplaceRule
+	var existingRule model.URLReplaceRule
 	if err := database.DB.First(&existingRule, ruleID).Error; err != nil {
 		if err == gorm.ErrRecordNotFound {
 			http.Error(w, "URL replace rule not found", http.StatusNotFound)
@@ -615,7 +615,7 @@ func (h *AdminHandler) updateURLReplaceRule(w http.ResponseWriter, r *http.Reque
 // deleteURLReplaceRule 删除URL替换规则
 func (h *AdminHandler) deleteURLReplaceRule(w http.ResponseWriter, r *http.Request, ruleID uint) {
 	// 检查规则是否存在
-	var rule models.URLReplaceRule
+	var rule model.URLReplaceRule
 	if err := database.DB.First(&rule, ruleID).Error; err != nil {
 		if err == gorm.ErrRecordNotFound {
 			http.Error(w, "URL replace rule not found", http.StatusNotFound)
@@ -1013,7 +1013,7 @@ func (h *AdminHandler) UpdateEndpointSortOrder(w http.ResponseWriter, r *http.Re
 
 	// 批量更新排序
 	for _, order := range request.EndpointOrders {
-		if err := database.DB.Model(&models.APIEndpoint{}).
+		if err := database.DB.Model(&model.APIEndpoint{}).
 			Where("id = ?", order.ID).
 			Update("sort_order", order.SortOrder).Error; err != nil {
 			http.Error(w, fmt.Sprintf("Failed to update sort order: %v", err), http.StatusInternalServerError)

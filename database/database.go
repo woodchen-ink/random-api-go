@@ -7,7 +7,7 @@ import (
 	"path/filepath"
 	"time"
 
-	"random-api-go/models"
+	"random-api-go/model"
 
 	"github.com/glebarez/sqlite"
 	"gorm.io/gorm"
@@ -59,11 +59,11 @@ func Initialize(dataDir string) error {
 // autoMigrate 自动迁移数据库结构
 func autoMigrate() error {
 	return DB.AutoMigrate(
-		&models.APIEndpoint{},
-		&models.DataSource{},
-		&models.URLReplaceRule{},
-		&models.CachedURL{},
-		&models.Config{},
+		&model.APIEndpoint{},
+		&model.DataSource{},
+		&model.URLReplaceRule{},
+		&model.CachedURL{},
+		&model.Config{},
 	)
 }
 
@@ -81,12 +81,12 @@ func Close() error {
 
 // CleanExpiredCache 清理过期缓存
 func CleanExpiredCache() error {
-	return DB.Where("expires_at < ?", time.Now()).Delete(&models.CachedURL{}).Error
+	return DB.Where("expires_at < ?", time.Now()).Delete(&model.CachedURL{}).Error
 }
 
 // GetConfig 获取配置值
 func GetConfig(key string, defaultValue string) string {
-	var config models.Config
+	var config model.Config
 	if err := DB.Where("key = ?", key).First(&config).Error; err != nil {
 		if err == gorm.ErrRecordNotFound {
 			return defaultValue
@@ -99,12 +99,12 @@ func GetConfig(key string, defaultValue string) string {
 
 // SetConfig 设置配置值
 func SetConfig(key, value, configType string) error {
-	var config models.Config
+	var config model.Config
 	err := DB.Where("key = ?", key).First(&config).Error
 
 	if err == gorm.ErrRecordNotFound {
 		// 创建新配置
-		config = models.Config{
+		config = model.Config{
 			Key:   key,
 			Value: value,
 			Type:  configType,
@@ -121,13 +121,13 @@ func SetConfig(key, value, configType string) error {
 }
 
 // ListConfigs 列出所有配置
-func ListConfigs() ([]models.Config, error) {
-	var configs []models.Config
+func ListConfigs() ([]model.Config, error) {
+	var configs []model.Config
 	err := DB.Order("key").Find(&configs).Error
 	return configs, err
 }
 
 // DeleteConfig 删除配置
 func DeleteConfig(key string) error {
-	return DB.Where("key = ?", key).Delete(&models.Config{}).Error
+	return DB.Where("key = ?", key).Delete(&model.Config{}).Error
 }

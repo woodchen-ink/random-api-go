@@ -1,4 +1,4 @@
-package services
+package service
 
 import (
 	"encoding/json"
@@ -6,7 +6,7 @@ import (
 	"io"
 	"log"
 	"net/http"
-	"random-api-go/models"
+	"random-api-go/model"
 	"strings"
 	"time"
 )
@@ -26,7 +26,7 @@ func NewAPIFetcher() *APIFetcher {
 }
 
 // FetchURLs 从API接口获取URL列表
-func (af *APIFetcher) FetchURLs(config *models.APIConfig) ([]string, error) {
+func (af *APIFetcher) FetchURLs(config *model.APIConfig) ([]string, error) {
 	var allURLs []string
 
 	// 对于GET/POST接口，我们预获取多次以获得不同的URL
@@ -83,13 +83,13 @@ func (af *APIFetcher) FetchURLs(config *models.APIConfig) ([]string, error) {
 }
 
 // FetchSingleURL 实时获取单个URL (用于GET/POST实时请求)
-func (af *APIFetcher) FetchSingleURL(config *models.APIConfig) ([]string, error) {
+func (af *APIFetcher) FetchSingleURL(config *model.APIConfig) ([]string, error) {
 	log.Printf("实时请求 %s 接口: %s", config.Method, config.URL)
 	return af.fetchSingleRequest(config)
 }
 
 // fetchSingleRequest 执行单次API请求
-func (af *APIFetcher) fetchSingleRequest(config *models.APIConfig) ([]string, error) {
+func (af *APIFetcher) fetchSingleRequest(config *model.APIConfig) ([]string, error) {
 	var req *http.Request
 	var err error
 
