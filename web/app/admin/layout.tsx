@@ -10,6 +10,7 @@ import {
   isAuthenticated,
   type AuthUser
 } from '@/lib/auth'
+import Link from 'next/link'
 
 const navItems = [
   { key: 'endpoints', label: 'API端点', href: '/admin' },
@@ -80,15 +81,17 @@ export default function AdminLayout({
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center">
               <h1 className="text-xl font-semibold mr-8">
-                随机API管理后台
+                <Link href="/">
+                  随机API管理后台
+                </Link>
               </h1>
               
               {/* Navigation */}
               <nav className="flex space-x-8">
                 {navItems.map((item) => (
-                  <button
+                  <Link
                     key={item.key}
-                    onClick={() => router.push(item.href)}
+                    href={item.href}
                     className={`px-3 py-2 text-sm font-medium rounded-md transition-colors ${
                       pathname === item.href
                         ? 'bg-primary text-primary-foreground'
@@ -96,7 +99,7 @@ export default function AdminLayout({
                     }`}
                   >
                     {item.label}
-                  </button>
+                  </Link>
                 ))}
               </nav>
             </div>
