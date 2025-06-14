@@ -1,0 +1,6 @@
+.cursorignore
+.env
+.cursor/rules/myrule.mdc
+data/data.db
+data/server.log
+data/stats.json

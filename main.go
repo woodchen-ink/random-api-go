@@ -8,7 +8,9 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"path/filepath"
 	"random-api-go/config"
+	"random-api-go/database"
 	"random-api-go/handlers"
 	"random-api-go/logging"
 	"random-api-go/router"
@@ -19,9 +21,11 @@ import (
 )
 
 type App struct {
-	server *http.Server
-	router *router.Router
-	Stats  *stats.StatsManager
+	server        *http.Server
+	router        *router.Router
+	Stats         *stats.StatsManager
+	adminHandler  *handlers.AdminHandler
+	staticHandler *handlers.StaticHandler
 }
 
 func NewApp() *App {
@@ -32,7 +36,7 @@ func NewApp() *App {
 
 func (a *App) Initialize() error {
 	// 先加载配置
-	if err := config.Load("/root/data/config.json"); err != nil {
+	if err := config.Load(); err != nil {
 		return err
 	}
 
@@ -45,15 +49,35 @@ func (a *App) Initialize() error {
 		return fmt.Errorf("failed to create data directory: %w", err)
 	}
 
+	// 初始化数据库
+	if err := database.Initialize(config.Get().Storage.DataDir); err != nil {
+		return fmt.Errorf("failed to initialize database: %w", err)
+	}
+
 	// 初始化日志
 	logging.SetupLogging()
 
 	// 初始化统计管理器
-	a.Stats = stats.NewStatsManager(config.Get().Storage.StatsFile)
+	statsFile := config.Get().Storage.DataDir + "/stats.json"
+	a.Stats = stats.NewStatsManager(statsFile)
 
-	// 初始化服务
-	if err := services.InitializeCSVService(); err != nil {
-		return err
+	// 初始化端点服务
+	services.GetEndpointService()
+
+	// 创建管理后台处理器
+	a.adminHandler = handlers.NewAdminHandler()
+
+	// 创建静态文件处理器
+	staticDir := "./web/out"
+	if _, err := os.Stat(staticDir); os.IsNotExist(err) {
+		log.Printf("Warning: Static directory %s does not exist, static file serving will be disabled", staticDir)
+	} else {
+		absStaticDir, err := filepath.Abs(staticDir)
+		if err != nil {
+			return fmt.Errorf("failed to get absolute path for static directory: %w", err)
+		}
+		a.staticHandler = handlers.NewStaticHandler(absStaticDir)
+		log.Printf("Static file serving enabled from: %s", absStaticDir)
 	}
 
 	// 创建 handlers
@@ -63,6 +87,12 @@ func (a *App) Initialize() error {
 
 	// 设置路由
 	a.router.Setup(handlers)
+	a.router.SetupAdminRoutes(a.adminHandler)
+
+	// 设置静态文件路由（如果静态文件处理器存在）
+	if a.staticHandler != nil {
+		a.router.SetupStaticRoutes(a.staticHandler)
+	}
 
 	// 创建 HTTP 服务器
 	cfg := config.Get().Server
@@ -81,6 +111,10 @@ func (a *App) Run() error {
 	// 启动服务器
 	go func() {
 		log.Printf("Server starting on %s...\n", a.server.Addr)
+		if a.staticHandler != nil {
+			log.Printf("Frontend available at: http://localhost%s", a.server.Addr)
+			log.Printf("Admin panel available at: http://localhost%s/admin", a.server.Addr)
+		}
 		if err := a.server.ListenAndServe(); err != http.ErrServerClosed {
 			log.Fatalf("Server failed: %v", err)
 		}
@@ -101,6 +135,11 @@ func (a *App) gracefulShutdown() error {
 	defer cancel()
 
 	a.Stats.Shutdown()
+
+	// 关闭数据库连接
+	if err := database.Close(); err != nil {
+		log.Printf("Error closing database: %v", err)
+	}
 
 	if err := a.server.Shutdown(ctx); err != nil {
 		return err

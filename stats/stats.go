@@ -13,6 +13,13 @@ type EndpointStats struct {
 	LastResetDate string `json:"last_reset_date"`
 }
 
+// EndpointStatsResponse 用于API响应的结构体，使用PascalCase
+type EndpointStatsResponse struct {
+	TotalCalls    int64  `json:"TotalCalls"`
+	TodayCalls    int64  `json:"TodayCalls"`
+	LastResetDate string `json:"LastResetDate"`
+}
+
 type StatsManager struct {
 	Stats           map[string]*EndpointStats `json:"stats"`
 	mu              sync.RWMutex
@@ -162,6 +169,22 @@ func (sm *StatsManager) GetStats() map[string]*EndpointStats {
 	statsCopy := make(map[string]*EndpointStats)
 	for k, v := range sm.Stats {
 		statsCopy[k] = &EndpointStats{
+			TotalCalls:    v.TotalCalls,
+			TodayCalls:    v.TodayCalls,
+			LastResetDate: v.LastResetDate,
+		}
+	}
+
+	return statsCopy
+}
+
+func (sm *StatsManager) GetStatsForAPI() map[string]*EndpointStatsResponse {
+	sm.mu.RLock()
+	defer sm.mu.RUnlock()
+
+	statsCopy := make(map[string]*EndpointStatsResponse)
+	for k, v := range sm.Stats {
+		statsCopy[k] = &EndpointStatsResponse{
 			TotalCalls:    v.TotalCalls,
 			TodayCalls:    v.TodayCalls,
 			LastResetDate: v.LastResetDate,

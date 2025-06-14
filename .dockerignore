@@ -1,0 +1,47 @@
+# Git
+.git
+.gitignore
+
+# IDE
+.vscode
+.idea
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/
+data/logs/
+data/server.log
+
+# Database
+data/data.db
+data/stats.json
+
+# Build artifacts
+random-api-go.exe
+random-api-go
+random-api-test
+*.exe
+
+# Go
+vendor/
+
+# Docker
+docker-compose*.yml
+test-build.sh
+
+# Documentation
+*.md
+DOCKER_DEPLOYMENT.md
+
+# Misc
+.env
+.env.local
+.env.example
+README.md 

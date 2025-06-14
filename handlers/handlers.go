@@ -20,7 +20,8 @@ type Router interface {
 }
 
 type Handlers struct {
-	Stats *stats.StatsManager
+	Stats           *stats.StatsManager
+	endpointService *services.EndpointService
 }
 
 func (h *Handlers) HandleAPIRequest(w http.ResponseWriter, r *http.Request) {
@@ -39,60 +40,15 @@ func (h *Handlers) HandleAPIRequest(w http.ResponseWriter, r *http.Request) {
 		realIP := utils.GetRealIP(r)
 
 		path := strings.TrimPrefix(r.URL.Path, "/")
-		pathSegments := strings.Split(path, "/")
 
-		if len(pathSegments) < 2 {
-			monitoring.LogRequest(monitoring.RequestLog{
-				Time:       time.Now().UnixMilli(),
-				Path:       r.URL.Path,
-				Method:     r.Method,
-				StatusCode: http.StatusNotFound,
-				Latency:    float64(time.Since(start).Microseconds()) / 1000,
-				IP:         realIP,
-				Referer:    r.Referer(),
-			})
-			resultChan <- result{err: fmt.Errorf("not found")}
-			return
+		// 初始化端点服务
+		if h.endpointService == nil {
+			h.endpointService = services.GetEndpointService()
 		}
 
-		prefix := pathSegments[0]
-		suffix := pathSegments[1]
-
-		services.Mu.RLock()
-		csvPath, ok := services.CSVPathsCache[prefix][suffix]
-		services.Mu.RUnlock()
-
-		if !ok {
-			monitoring.LogRequest(monitoring.RequestLog{
-				Time:       time.Now().UnixMilli(),
-				Path:       r.URL.Path,
-				Method:     r.Method,
-				StatusCode: http.StatusNotFound,
-				Latency:    float64(time.Since(start).Microseconds()) / 1000,
-				IP:         realIP,
-				Referer:    r.Referer(),
-			})
-			resultChan <- result{err: fmt.Errorf("not found")}
-			return
-		}
-
-		selector, err := services.GetCSVContent(csvPath)
+		// 使用新的端点服务
+		randomURL, err := h.endpointService.GetRandomURL(path)
 		if err != nil {
-			log.Printf("Error fetching CSV content: %v", err)
-			monitoring.LogRequest(monitoring.RequestLog{
-				Time:       time.Now().UnixMilli(),
-				Path:       r.URL.Path,
-				Method:     r.Method,
-				StatusCode: http.StatusInternalServerError,
-				Latency:    float64(time.Since(start).Microseconds()) / 1000,
-				IP:         realIP,
-				Referer:    r.Referer(),
-			})
-			resultChan <- result{err: err}
-			return
-		}
-
-		if len(selector.URLs) == 0 {
 			monitoring.LogRequest(monitoring.RequestLog{
 				Time:       time.Now().UnixMilli(),
 				Path:       r.URL.Path,
@@ -102,13 +58,12 @@ func (h *Handlers) HandleAPIRequest(w http.ResponseWriter, r *http.Request) {
 				IP:         realIP,
 				Referer:    r.Referer(),
 			})
-			resultChan <- result{err: fmt.Errorf("no content available")}
+			resultChan <- result{err: fmt.Errorf("endpoint not found: %v", err)}
 			return
 		}
 
-		randomURL := selector.GetRandomURL()
-		endpoint := fmt.Sprintf("%s/%s", prefix, suffix)
-		h.Stats.IncrementCalls(endpoint)
+		// 成功获取到URL
+		h.Stats.IncrementCalls(path)
 
 		duration := time.Since(start)
 		monitoring.LogRequest(monitoring.RequestLog{
@@ -137,7 +92,7 @@ func (h *Handlers) HandleAPIRequest(w http.ResponseWriter, r *http.Request) {
 	select {
 	case res := <-resultChan:
 		if res.err != nil {
-			http.Error(w, res.err.Error(), http.StatusInternalServerError)
+			http.Error(w, res.err.Error(), http.StatusNotFound)
 			return
 		}
 		http.Redirect(w, r, res.url, http.StatusFound)
@@ -148,8 +103,14 @@ func (h *Handlers) HandleAPIRequest(w http.ResponseWriter, r *http.Request) {
 
 func (h *Handlers) HandleStats(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
-	stats := h.Stats.GetStats()
-	if err := json.NewEncoder(w).Encode(stats); err != nil {
+	stats := h.Stats.GetStatsForAPI()
+
+	// 包装数据格式以匹配前端期望
+	response := map[string]interface{}{
+		"Stats": stats,
+	}
+
+	if err := json.NewEncoder(w).Encode(response); err != nil {
 		http.Error(w, "Error encoding stats", http.StatusInternalServerError)
 		log.Printf("Error encoding stats: %v", err)
 	}
@@ -157,18 +118,51 @@ func (h *Handlers) HandleStats(w http.ResponseWriter, r *http.Request) {
 
 func (h *Handlers) HandleURLStats(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
-	stats := services.GetURLCounts()
+
+	// 使用新的端点服务获取统计信息
+	if h.endpointService == nil {
+		h.endpointService = services.GetEndpointService()
+	}
+
+	endpoints, err := h.endpointService.ListEndpoints()
+	if err != nil {
+		http.Error(w, "Error getting endpoint stats", http.StatusInternalServerError)
+		return
+	}
 
 	// 转换为前端期望的格式
 	response := make(map[string]struct {
 		TotalURLs int `json:"total_urls"`
 	})
 
-	for endpoint, stat := range stats {
-		response[endpoint] = struct {
-			TotalURLs int `json:"total_urls"`
-		}{
-			TotalURLs: stat.TotalURLs,
+	for _, endpoint := range endpoints {
+		if endpoint.IsActive {
+			totalURLs := 0
+			for _, ds := range endpoint.DataSources {
+				if ds.IsActive {
+					// 尝试获取实际的URL数量
+					urls, err := h.endpointService.GetDataSourceURLCount(&ds)
+					if err != nil {
+						log.Printf("Failed to get URL count for data source %d: %v", ds.ID, err)
+						// 如果获取失败，使用估算值
+						switch ds.Type {
+						case "manual":
+							totalURLs += 5 // 手动数据源估算
+						case "lankong":
+							totalURLs += 50 // 兰空图床估算
+						case "api_get", "api_post":
+							totalURLs += 1 // API数据源每次返回1个
+						}
+					} else {
+						totalURLs += urls
+					}
+				}
+			}
+			response[endpoint.URL] = struct {
+				TotalURLs int `json:"total_urls"`
+			}{
+				TotalURLs: totalURLs,
+			}
 		}
 	}
 
@@ -185,12 +179,11 @@ func (h *Handlers) HandleMetrics(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handlers) Setup(r *router.Router) {
-	// 动态路由处理
-	r.HandleFunc("/pic/", h.HandleAPIRequest)
-	r.HandleFunc("/video/", h.HandleAPIRequest)
+	// 通用路由处理 - 匹配所有路径
+	r.HandleFunc("/", h.HandleAPIRequest)
 
 	// API 统计和监控
-	r.HandleFunc("/stats", h.HandleStats)
-	r.HandleFunc("/urlstats", h.HandleURLStats)
-	r.HandleFunc("/metrics", h.HandleMetrics)
+	r.HandleFunc("/api/stats", h.HandleStats)
+	r.HandleFunc("/api/urlstats", h.HandleURLStats)
+	r.HandleFunc("/api/metrics", h.HandleMetrics)
 }

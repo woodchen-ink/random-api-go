@@ -1,45 +1,34 @@
 package config
 
 import (
-	"encoding/json"
-	"fmt"
+	"bufio"
 	"math/rand"
 	"os"
-	"path/filepath"
+	"strconv"
+	"strings"
 	"time"
-)
-
-const (
-	EnvBaseURL     = "BASE_URL"
-	DefaultPort    = ":5003"
-	RequestTimeout = 10 * time.Second
 )
 
 type Config struct {
 	Server struct {
-		Port           string        `json:"port"`
-		ReadTimeout    time.Duration `json:"read_timeout"`
-		WriteTimeout   time.Duration `json:"write_timeout"`
-		MaxHeaderBytes int           `json:"max_header_bytes"`
-	} `json:"server"`
+		Port           string
+		ReadTimeout    time.Duration
+		WriteTimeout   time.Duration
+		MaxHeaderBytes int
+	}
 
 	Storage struct {
-		DataDir   string `json:"data_dir"`
-		StatsFile string `json:"stats_file"`
-		LogFile   string `json:"log_file"`
-	} `json:"storage"`
+		DataDir string
+	}
 
-	API struct {
-		BaseURL        string        `json:"base_url"`
-		RequestTimeout time.Duration `json:"request_timeout"`
-	} `json:"api"`
+	OAuth struct {
+		ClientID     string
+		ClientSecret string
+	}
 
-	Performance struct {
-		MaxConcurrentRequests int           `json:"max_concurrent_requests"`
-		RequestTimeout        time.Duration `json:"request_timeout"`
-		CacheTTL              time.Duration `json:"cache_ttl"`
-		EnableCompression     bool          `json:"enable_compression"`
-	} `json:"performance"`
+	App struct {
+		BaseURL string
+	}
 }
 
 var (
@@ -47,87 +36,67 @@ var (
 	RNG *rand.Rand
 )
 
-func Load(configFile string) error {
-	// 尝试创建配置目录
-	configDir := filepath.Dir(configFile)
-	if err := os.MkdirAll(configDir, 0755); err != nil {
-		return fmt.Errorf("failed to create config directory: %w", err)
-	}
-
-	// 检查配置文件是否存在
-	if _, err := os.Stat(configFile); os.IsNotExist(err) {
-		// 创建默认配置
-		defaultConfig := Config{
-			Server: struct {
-				Port           string        `json:"port"`
-				ReadTimeout    time.Duration `json:"read_timeout"`
-				WriteTimeout   time.Duration `json:"write_timeout"`
-				MaxHeaderBytes int           `json:"max_header_bytes"`
-			}{
-				Port:           ":5003",
-				ReadTimeout:    30 * time.Second,
-				WriteTimeout:   30 * time.Second,
-				MaxHeaderBytes: 1 << 20,
-			},
-			Storage: struct {
-				DataDir   string `json:"data_dir"`
-				StatsFile string `json:"stats_file"`
-				LogFile   string `json:"log_file"`
-			}{
-				DataDir:   "/root/data",
-				StatsFile: "/root/data/stats.json",
-				LogFile:   "/root/data/logs/server.log",
-			},
-			API: struct {
-				BaseURL        string        `json:"base_url"`
-				RequestTimeout time.Duration `json:"request_timeout"`
-			}{
-				BaseURL:        "",
-				RequestTimeout: 10 * time.Second,
-			},
-			Performance: struct {
-				MaxConcurrentRequests int           `json:"max_concurrent_requests"`
-				RequestTimeout        time.Duration `json:"request_timeout"`
-				CacheTTL              time.Duration `json:"cache_ttl"`
-				EnableCompression     bool          `json:"enable_compression"`
-			}{
-				MaxConcurrentRequests: 100,
-				RequestTimeout:        10 * time.Second,
-				CacheTTL:              1 * time.Hour,
-				EnableCompression:     true,
-			},
-		}
-
-		// 将默认配置写入文件
-		data, err := json.MarshalIndent(defaultConfig, "", "  ")
-		if err != nil {
-			return fmt.Errorf("failed to marshal default config: %w", err)
-		}
-
-		if err := os.WriteFile(configFile, data, 0644); err != nil {
-			return fmt.Errorf("failed to write default config: %w", err)
-		}
-
-		cfg = defaultConfig
-		return nil
-	}
-
-	// 读取现有配置文件
-	file, err := os.Open(configFile)
+// loadEnvFile 加载.env文件
+func loadEnvFile() error {
+	file, err := os.Open(".env")
 	if err != nil {
-		return err
+		return err // .env文件不存在，这是正常的
 	}
 	defer file.Close()
 
-	decoder := json.NewDecoder(file)
-	if err := decoder.Decode(&cfg); err != nil {
-		return err
+	scanner := bufio.NewScanner(file)
+	for scanner.Scan() {
+		line := strings.TrimSpace(scanner.Text())
+
+		// 跳过空行和注释
+		if line == "" || strings.HasPrefix(line, "#") {
+			continue
+		}
+
+		// 解析键值对
+		parts := strings.SplitN(line, "=", 2)
+		if len(parts) != 2 {
+			continue
+		}
+
+		key := strings.TrimSpace(parts[0])
+		value := strings.TrimSpace(parts[1])
+
+		// 移除引号
+		if (strings.HasPrefix(value, "\"") && strings.HasSuffix(value, "\"")) ||
+			(strings.HasPrefix(value, "'") && strings.HasSuffix(value, "'")) {
+			value = value[1 : len(value)-1]
+		}
+
+		// 只有当环境变量不存在时才设置
+		if os.Getenv(key) == "" {
+			os.Setenv(key, value)
+		}
 	}
 
-	// 如果环境变量设置了 BASE_URL，则覆盖配置文件中的设置
-	if envBaseURL := os.Getenv(EnvBaseURL); envBaseURL != "" {
-		cfg.API.BaseURL = envBaseURL
-	}
+	return scanner.Err()
+}
+
+// Load 从环境变量加载配置
+func Load() error {
+	// 首先尝试加载.env文件
+	loadEnvFile() // 忽略错误，因为.env文件是可选的
+
+	// 服务器配置
+	cfg.Server.Port = getEnv("PORT", ":5003")
+	cfg.Server.ReadTimeout = getDurationEnv("READ_TIMEOUT", 30*time.Second)
+	cfg.Server.WriteTimeout = getDurationEnv("WRITE_TIMEOUT", 30*time.Second)
+	cfg.Server.MaxHeaderBytes = getIntEnv("MAX_HEADER_BYTES", 1<<20)
+
+	// 存储配置
+	cfg.Storage.DataDir = getEnv("DATA_DIR", "./data")
+
+	// OAuth配置
+	cfg.OAuth.ClientID = getEnv("OAUTH_CLIENT_ID", "")
+	cfg.OAuth.ClientSecret = getEnv("OAUTH_CLIENT_SECRET", "")
+
+	// 应用配置
+	cfg.App.BaseURL = getEnv("BASE_URL", "http://localhost:5003")
 
 	return nil
 }
@@ -138,4 +107,32 @@ func Get() *Config {
 
 func InitRNG(r *rand.Rand) {
 	RNG = r
+}
+
+// getEnv 获取环境变量，如果不存在则返回默认值
+func getEnv(key, defaultValue string) string {
+	if value := os.Getenv(key); value != "" {
+		return value
+	}
+	return defaultValue
+}
+
+// getIntEnv 获取整数类型的环境变量
+func getIntEnv(key string, defaultValue int) int {
+	if value := os.Getenv(key); value != "" {
+		if intValue, err := strconv.Atoi(value); err == nil {
+			return intValue
+		}
+	}
+	return defaultValue
+}
+
+// getDurationEnv 获取时间间隔类型的环境变量
+func getDurationEnv(key string, defaultValue time.Duration) time.Duration {
+	if value := os.Getenv(key); value != "" {
+		if duration, err := time.ParseDuration(value); err == nil {
+			return duration
+		}
+	}
+	return defaultValue
 }

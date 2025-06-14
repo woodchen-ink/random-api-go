@@ -8,5 +8,7 @@ services:
       - ./data:/root/data
     environment:
       - TZ=Asia/Shanghai
-      - BASE_URL=https://example.net/random-api
+      - BASE_URL=https://random-api.czl.net
+      - OAUTH_CLIENT_ID=1234567890
+      - OAUTH_CLIENT_SECRET=1234567890
     restart: unless-stopped
