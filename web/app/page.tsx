@@ -214,154 +214,145 @@ export default function Home() {
 
   return (
     <div 
-      className="min-h-screen bg-gray-100 dark:bg-gray-900 relative"
+      className="min-h-screen bg-gray-900 relative"
       style={{
-        backgroundImage: 'url(/pic/all)',
+        backgroundImage: 'url(https://random-api.czl.net/pic/all)',
         backgroundSize: 'cover',
         backgroundPosition: 'center',
         backgroundAttachment: 'fixed'
       }}
     >
-      {/* 背景遮罩 */}
-      <div className="absolute inset-0 bg-white/70 dark:bg-black/70 backdrop-blur-sm"></div>
+      {/* 背景遮罩 - 让背景图若影若现 */}
+      <div className="absolute inset-0 bg-gray-900/97"></div>
       
-      <div className="container mx-auto px-4 py-6 relative z-10">
-        <div className="max-w-7xl mx-auto">
-          {/* Header - 更简洁 */}
-          <div className="text-center mb-6">
-            <div className="inline-flex items-center justify-center w-12 h-12 bg-gray-800 dark:bg-gray-200 rounded-full mb-3">
-              <svg className="w-6 h-6 text-white dark:text-gray-800" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      {/* 简洁背景 */}
+      <div className="absolute inset-0">
+        <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.01)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.01)_1px,transparent_1px)] bg-[size:40px_40px]"></div>
+      </div>
+      
+      <div className="container mx-auto px-4 py-8 relative z-10">
+        <div className="max-w-6xl mx-auto">
+          {/* Header - 简洁 */}
+          <div className="text-center mb-12">
+            <div className="inline-flex items-center justify-center w-12 h-12 bg-gray-800 rounded-lg mb-4">
+              <svg className="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
               </svg>
             </div>
+            <h1 className="text-3xl font-medium text-white mb-2">
+              Random API Service
+            </h1>
+            <p className="text-gray-500">随机API服务</p>
           </div>
 
-          {/* System Status Section - 性冷淡风格 */}
+          {/* System Status Section - 冷淡风格 */}
           {systemMetrics && (
-            <div className="mb-6">
-              <h2 className="text-xl font-bold mb-4 text-gray-800 dark:text-gray-200 text-center">
+            <div className="mb-12">
+              <h2 className="text-xl font-medium mb-6 text-gray-300">
                 系统状态
               </h2>
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
                 {/* 运行时间 */}
-                <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-lg shadow-sm border border-gray-200/50 dark:border-gray-700/50 p-4">
-                  <div className="flex items-center justify-between mb-2">
-                    <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300">运行时间</h3>
-                    <div className="w-2 h-2 bg-gray-400 dark:bg-gray-500 rounded-full"></div>
+                <div className="bg-gray-800/50 rounded-lg border border-gray-700/50 p-4">
+                  <div className="flex items-center justify-between mb-3">
+                    <h3 className="text-sm text-gray-400">运行时间</h3>
+                    <div className="w-2 h-2 bg-gray-500 rounded-full"></div>
                   </div>
-                  <p className="text-lg font-bold text-gray-900 dark:text-gray-100 leading-tight">
+                  <p className="text-lg font-medium text-white leading-tight">
                     {formatUptime(systemMetrics.uptime)}
                   </p>
-                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 truncate">
+                  <p className="text-xs text-gray-600 mt-2 truncate">
                     {formatStartTime(systemMetrics.start_time)}
                   </p>
                 </div>
 
                 {/* CPU核心数 */}
-                <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-lg shadow-sm border border-gray-200/50 dark:border-gray-700/50 p-4">
-                  <div className="flex items-center justify-between mb-2">
-                    <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300">CPU核心</h3>
-                    <svg className="w-4 h-4 text-gray-500 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div className="bg-gray-800/50 rounded-lg border border-gray-700/50 p-4">
+                  <div className="flex items-center justify-between mb-3">
+                    <h3 className="text-sm text-gray-400">CPU核心</h3>
+                    <svg className="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z" />
                     </svg>
                   </div>
-                  <p className="text-xl font-bold text-gray-900 dark:text-gray-100">
-                    {systemMetrics.num_cpu} 核
+                  <p className="text-xl font-medium text-white">
+                    {systemMetrics.num_cpu}
                   </p>
+                  <p className="text-xs text-gray-600">核心</p>
                 </div>
 
                 {/* Goroutine数量 */}
-                <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-lg shadow-sm border border-gray-200/50 dark:border-gray-700/50 p-4">
-                  <div className="flex items-center justify-between mb-2">
-                    <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300">协程数</h3>
-                    <svg className="w-4 h-4 text-gray-500 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div className="bg-gray-800/50 rounded-lg border border-gray-700/50 p-4">
+                  <div className="flex items-center justify-between mb-3">
+                    <h3 className="text-sm text-gray-400">协程数</h3>
+                    <svg className="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
                     </svg>
                   </div>
-                  <p className="text-xl font-bold text-gray-900 dark:text-gray-100">
+                  <p className="text-xl font-medium text-white">
                     {systemMetrics.num_goroutine}
                   </p>
                 </div>
 
                 {/* 平均延迟 */}
-                <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-lg shadow-sm border border-gray-200/50 dark:border-gray-700/50 p-4">
-                  <div className="flex items-center justify-between mb-2">
-                    <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300">平均延迟</h3>
-                    <svg className="w-4 h-4 text-gray-500 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div className="bg-gray-800/50 rounded-lg border border-gray-700/50 p-4">
+                  <div className="flex items-center justify-between mb-3">
+                    <h3 className="text-sm text-gray-400">平均延迟</h3>
+                    <svg className="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
                   </div>
-                  <p className="text-xl font-bold text-gray-900 dark:text-gray-100">
-                    {systemMetrics.average_latency.toFixed(2)} ms
+                  <p className="text-lg font-medium text-white">
+                    {systemMetrics.average_latency.toFixed(2)}
                   </p>
+                  <p className="text-xs text-gray-600">毫秒</p>
                 </div>
 
                 {/* 堆内存分配 */}
-                <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-lg shadow-sm border border-gray-200/50 dark:border-gray-700/50 p-4">
-                  <div className="flex items-center justify-between mb-2">
-                    <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300">堆内存</h3>
-                    <svg className="w-4 h-4 text-gray-500 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div className="bg-gray-800/50 rounded-lg border border-gray-700/50 p-4">
+                  <div className="flex items-center justify-between mb-3">
+                    <h3 className="text-sm text-gray-400">堆内存</h3>
+                    <svg className="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v4a2 2 0 01-2 2H9a2 2 0 01-2-2z" />
                     </svg>
                   </div>
-                  <p className="text-lg font-bold text-gray-900 dark:text-gray-100">
+                  <p className="text-base font-medium text-white">
                     {formatBytes(systemMetrics.memory_stats.heap_alloc)}
                   </p>
-                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                  <p className="text-xs text-gray-600 mt-1">
                     系统: {formatBytes(systemMetrics.memory_stats.heap_sys)}
                   </p>
                 </div>
-
-                {/* 当前时间
-                <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-lg shadow-sm border border-gray-200/50 dark:border-gray-700/50 p-4">
-                  <div className="flex items-center justify-between mb-2">
-                    <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300">当前时间</h3>
-                    <svg className="w-4 h-4 text-gray-500 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                    </svg>
-                  </div>
-                  <p className="text-sm font-bold text-gray-900 dark:text-gray-100 leading-tight">
-                    {new Date().toLocaleString('zh-CN', {
-                      month: '2-digit',
-                      day: '2-digit',
-                      hour: '2-digit',
-                      minute: '2-digit'
-                    })}
-                  </p>
-                </div> */}
               </div>
             </div>
           )}
 
-          
-
-          {/* API端点统计 - 全宽布局 */}
+          {/* API端点统计 - 简洁风格 */}
           {visibleEndpoints.length > 0 && (
-            <div className="mb-6">
-              <h2 className="text-xl font-bold mb-4 text-gray-800 dark:text-gray-200">
-                API 端点统计
+            <div className="mb-12">
+              <h2 className="text-xl font-medium mb-6 text-gray-300">
+                API 端点
               </h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {visibleEndpoints.map((endpoint: Endpoint) => {
                   const endpointStats = stats.Stats?.[endpoint.url] || { TotalCalls: 0, TodayCalls: 0 }
                   const urlCount = urlStats[endpoint.url]?.total_urls || 0
                   
                   return (
-                    <div key={endpoint.id} className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-lg shadow-sm border border-gray-200/50 dark:border-gray-700/50 p-4">
-                      <div className="flex items-start justify-between mb-3">
+                    <div key={endpoint.id} className="bg-gray-800/50 rounded-lg border border-gray-700/50 p-5">
+                      <div className="flex items-start justify-between mb-4">
                         <div className="flex-1 min-w-0">
-                          <h3 className="text-base font-semibold text-gray-900 dark:text-gray-100 truncate">
+                          <h3 className="text-base font-medium text-white truncate">
                             {endpoint.name}
                           </h3>
-                          <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 font-mono truncate">
+                          <p className="text-sm text-gray-500 mt-1 font-mono truncate">
                             /{endpoint.url}
                           </p>
                         </div>
-                        <div className="flex items-center space-x-2 ml-2">
+                        <div className="flex items-center space-x-2 ml-3">
                           <Button 
                             size="sm" 
                             variant="outline" 
-                            className="text-xs px-2 py-1 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+                            className="text-xs px-3 py-1.5 bg-transparent border-gray-600 text-gray-400 hover:bg-gray-700 hover:text-gray-300"
                             onClick={() => handleCopyUrl(endpoint)}
                           >
                             {copiedUrl === endpoint.url ? (
@@ -374,7 +365,7 @@ export default function Home() {
                               </svg>
                             )}
                           </Button>
-                          <Button size="sm" variant="outline" className="text-xs px-2 py-1 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700">
+                          <Button size="sm" variant="outline" className="text-xs px-3 py-1.5 bg-transparent border-gray-600 text-gray-400 hover:bg-gray-700 hover:text-gray-300">
                             <Link href={`/${endpoint.url}`} target="_blank">
                               访问
                             </Link>
@@ -382,29 +373,29 @@ export default function Home() {
                         </div>
                       </div>
                       
-                      <div className="grid grid-cols-3 gap-3 text-center mb-3">
-                        <div className="bg-gray-50/50 dark:bg-gray-700/50 rounded-md p-2">
-                          <p className="text-xs text-gray-600 dark:text-gray-400">今日</p>
-                          <p className="text-lg font-bold text-gray-900 dark:text-gray-100">
+                      <div className="grid grid-cols-3 gap-3 text-center mb-4">
+                        <div className="bg-gray-700/30 rounded p-2">
+                          <p className="text-xs text-gray-500 mb-1">今日</p>
+                          <p className="text-lg font-medium text-white">
                             {endpointStats.TodayCalls}
                           </p>
                         </div>
-                        <div className="bg-gray-50/50 dark:bg-gray-700/50 rounded-md p-2">
-                          <p className="text-xs text-gray-600 dark:text-gray-400">总计</p>
-                          <p className="text-lg font-bold text-gray-900 dark:text-gray-100">
+                        <div className="bg-gray-700/30 rounded p-2">
+                          <p className="text-xs text-gray-500 mb-1">总计</p>
+                          <p className="text-lg font-medium text-white">
                             {endpointStats.TotalCalls}
                           </p>
                         </div>
-                        <div className="bg-gray-50/50 dark:bg-gray-700/50 rounded-md p-2">
-                          <p className="text-xs text-gray-600 dark:text-gray-400">URL</p>
-                          <p className="text-lg font-bold text-gray-900 dark:text-gray-100">
+                        <div className="bg-gray-700/30 rounded p-2">
+                          <p className="text-xs text-gray-500 mb-1">URL</p>
+                          <p className="text-lg font-medium text-white">
                             {urlCount}
                           </p>
                         </div>
                       </div>
                       
                       {endpoint.description && (
-                        <p className="text-xs text-gray-500 dark:text-gray-400 line-clamp-2">
+                        <p className="text-sm text-gray-500 line-clamp-2">
                           {endpoint.description}
                         </p>
                       )}
@@ -415,25 +406,25 @@ export default function Home() {
             </div>
           )}
 
-          {/* Main Content - 半透明 */}
-          <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-xl shadow-sm border border-gray-200/50 dark:border-gray-700/50 p-6 mb-6">
-            <div className="prose prose-sm max-w-none dark:prose-invert">
+          {/* Main Content - 简洁内容区 */}
+          <div className="bg-gray-800/30 rounded-lg border border-gray-700/50 p-8 mb-12">
+            <div className="prose prose-lg max-w-none prose-invert">
               <ReactMarkdown 
                 remarkPlugins={[remarkGfm]}
                 components={{
-                  h1: ({children}) => <h1 className="text-3xl font-bold mb-4 text-gray-900 dark:text-white">{children}</h1>,
-                  h2: ({children}) => <h2 className="text-xl font-semibold mb-3 text-gray-800 dark:text-gray-200">{children}</h2>,
-                  h3: ({children}) => <h3 className="text-lg font-medium mb-2 text-gray-700 dark:text-gray-300">{children}</h3>,
-                  p: ({children}) => <p className="mb-3 text-gray-600 dark:text-gray-400">{children}</p>,
-                  ul: ({children}) => <ul className="list-disc list-inside mb-3 space-y-1">{children}</ul>,
-                  ol: ({children}) => <ol className="list-decimal list-inside mb-3 space-y-1">{children}</ol>,
-                  li: ({children}) => <li className="mb-1 text-gray-600 dark:text-gray-400">{children}</li>,
-                  strong: ({children}) => <strong className="font-semibold text-gray-900 dark:text-white">{children}</strong>,
-                  em: ({children}) => <em className="italic">{children}</em>,
-                  code: ({children}) => <code className="bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded text-sm font-mono">{children}</code>,
-                  pre: ({children}) => <pre className="bg-gray-100 dark:bg-gray-800 p-4 rounded-lg overflow-x-auto mb-4">{children}</pre>,
-                  blockquote: ({children}) => <blockquote className="border-l-4 border-gray-300 dark:border-gray-600 pl-4 italic text-gray-700 dark:text-gray-300 mb-4">{children}</blockquote>,
-                  a: ({href, children}) => <a href={href} className="text-blue-600 dark:text-blue-400 hover:underline" target="_blank" rel="noopener noreferrer">{children}</a>,
+                  h1: ({children}) => <h1 className="text-3xl font-medium mb-6 text-white">{children}</h1>,
+                  h2: ({children}) => <h2 className="text-xl font-medium mb-4 text-gray-200">{children}</h2>,
+                  h3: ({children}) => <h3 className="text-lg font-medium mb-3 text-gray-300">{children}</h3>,
+                  p: ({children}) => <p className="mb-4 text-gray-400 leading-relaxed">{children}</p>,
+                  ul: ({children}) => <ul className="list-disc list-inside mb-4 space-y-1">{children}</ul>,
+                  ol: ({children}) => <ol className="list-decimal list-inside mb-4 space-y-1">{children}</ol>,
+                  li: ({children}) => <li className="mb-1 text-gray-400">{children}</li>,
+                  strong: ({children}) => <strong className="font-medium text-gray-200">{children}</strong>,
+                  em: ({children}) => <em className="italic text-gray-400">{children}</em>,
+                  code: ({children}) => <code className="bg-gray-700/50 border border-gray-600 px-2 py-1 rounded text-sm font-mono text-gray-300">{children}</code>,
+                  pre: ({children}) => <pre className="bg-gray-800/50 border border-gray-600 p-4 rounded overflow-x-auto mb-4">{children}</pre>,
+                  blockquote: ({children}) => <blockquote className="border-l-4 border-gray-600 pl-4 italic text-gray-400 mb-4">{children}</blockquote>,
+                  a: ({href, children}) => <a href={href} className="text-gray-300 hover:text-white underline" target="_blank" rel="noopener noreferrer">{children}</a>,
                 }}
               >
                 {content}
