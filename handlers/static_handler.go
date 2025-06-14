@@ -27,8 +27,8 @@ func (s *StaticHandler) ServeStatic(w http.ResponseWriter, r *http.Request) {
 		path = "/index.html"
 	}
 
-	// 构建文件路径
-	filePath := filepath.Join(s.staticDir, path)
+	// 处理 Next.js 静态导出的路由问题
+	filePath := s.resolveFilePath(path)
 
 	// 检查文件是否存在
 	if _, err := os.Stat(filePath); os.IsNotExist(err) {
@@ -48,6 +48,47 @@ func (s *StaticHandler) ServeStatic(w http.ResponseWriter, r *http.Request) {
 
 	// 服务文件
 	http.ServeFile(w, r, filePath)
+}
+
+// resolveFilePath 解析文件路径，处理 Next.js 静态导出的路由问题
+func (s *StaticHandler) resolveFilePath(path string) string {
+	// 移除查询参数和锚点
+	if idx := strings.Index(path, "?"); idx != -1 {
+		path = path[:idx]
+	}
+	if idx := strings.Index(path, "#"); idx != -1 {
+		path = path[:idx]
+	}
+
+	// 构建初始文件路径
+	filePath := filepath.Join(s.staticDir, path)
+
+	// 如果路径以斜杠结尾，尝试查找 index.html
+	if strings.HasSuffix(path, "/") {
+		indexPath := filepath.Join(filePath, "index.html")
+		if _, err := os.Stat(indexPath); err == nil {
+			return indexPath
+		}
+	} else {
+		// 如果路径不以斜杠结尾，先检查是否存在对应的文件
+		if _, err := os.Stat(filePath); err == nil {
+			return filePath
+		}
+
+		// 如果文件不存在，尝试查找对应目录下的 index.html
+		indexPath := filepath.Join(filePath, "index.html")
+		if _, err := os.Stat(indexPath); err == nil {
+			return indexPath
+		}
+
+		// 尝试添加 .html 扩展名
+		htmlPath := filePath + ".html"
+		if _, err := os.Stat(htmlPath); err == nil {
+			return htmlPath
+		}
+	}
+
+	return filePath
 }
 
 // isFrontendRoute 判断是否是前端路由

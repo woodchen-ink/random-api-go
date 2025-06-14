@@ -3,7 +3,7 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   /* config options here */
   output: 'export',
-  trailingSlash: true,
+  trailingSlash: false, // 禁用尾斜杠，避免路由问题
   images: {
     unoptimized: true
   },

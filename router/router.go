@@ -143,6 +143,20 @@ func (r *Router) HandleFunc(pattern string, handler func(http.ResponseWriter, *h
 }
 
 func (r *Router) ServeHTTP(w http.ResponseWriter, req *http.Request) {
+	// 规范化路径，处理尾斜杠问题
+	path := req.URL.Path
+
+	// 对于前端路由，统一处理尾斜杠
+	if strings.HasPrefix(path, "/admin") && path != "/admin" && strings.HasSuffix(path, "/") {
+		// 移除尾斜杠并重定向
+		newPath := strings.TrimSuffix(path, "/")
+		if req.URL.RawQuery != "" {
+			newPath += "?" + req.URL.RawQuery
+		}
+		http.Redirect(w, req, newPath, http.StatusMovedPermanently)
+		return
+	}
+
 	// 首先检查是否是静态文件请求或前端路由
 	if r.staticHandler != nil && r.shouldServeStatic(req.URL.Path) {
 		r.staticHandler.ServeStatic(w, req)

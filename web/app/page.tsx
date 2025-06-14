@@ -216,7 +216,7 @@ export default function Home() {
     <div 
       className="min-h-screen bg-gray-100 dark:bg-gray-900 relative"
       style={{
-        backgroundImage: 'url(http://localhost:5003/pic/all)',
+        backgroundImage: 'url(/pic/all)',
         backgroundSize: 'cover',
         backgroundPosition: 'center',
         backgroundAttachment: 'fixed'

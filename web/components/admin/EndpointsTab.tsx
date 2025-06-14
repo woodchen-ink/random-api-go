@@ -34,13 +34,15 @@ import { GripVertical } from 'lucide-react'
 interface EndpointsTabProps {
   endpoints: APIEndpoint[]
   onCreateEndpoint: (data: Partial<APIEndpoint>) => void
+  onUpdateEndpoint: (id: number, data: Partial<APIEndpoint>) => void
   onUpdateEndpoints: () => void
 }
 
 // 可拖拽的表格行组件
-function SortableTableRow({ endpoint, onManageDataSources }: {
+function SortableTableRow({ endpoint, onManageDataSources, onEditEndpoint }: {
   endpoint: APIEndpoint
   onManageDataSources: (endpoint: APIEndpoint) => void
+  onEditEndpoint: (endpoint: APIEndpoint) => void
 }) {
   const {
     attributes,
@@ -96,20 +98,31 @@ function SortableTableRow({ endpoint, onManageDataSources }: {
         {new Date(endpoint.created_at).toLocaleDateString()}
       </TableCell>
       <TableCell>
-        <Button
-          onClick={() => onManageDataSources(endpoint)}
-          variant="outline"
-          size="sm"
-        >
-          管理数据源
-        </Button>
+        <div className="flex space-x-2">
+          <Button
+            onClick={() => onEditEndpoint(endpoint)}
+            variant="outline"
+            size="sm"
+          >
+            编辑
+          </Button>
+          <Button
+            onClick={() => onManageDataSources(endpoint)}
+            variant="outline"
+            size="sm"
+          >
+            管理数据源
+          </Button>
+        </div>
       </TableCell>
     </TableRow>
   )
 }
 
-export default function EndpointsTab({ endpoints, onCreateEndpoint, onUpdateEndpoints }: EndpointsTabProps) {
+export default function EndpointsTab({ endpoints, onCreateEndpoint, onUpdateEndpoint, onUpdateEndpoints }: EndpointsTabProps) {
   const [showCreateForm, setShowCreateForm] = useState(false)
+  const [showEditForm, setShowEditForm] = useState(false)
+  const [editingEndpoint, setEditingEndpoint] = useState<APIEndpoint | null>(null)
   const [selectedEndpoint, setSelectedEndpoint] = useState<APIEndpoint | null>(null)
   const [formData, setFormData] = useState({
     name: '',
@@ -131,6 +144,28 @@ export default function EndpointsTab({ endpoints, onCreateEndpoint, onUpdateEndp
     onCreateEndpoint(formData)
     setFormData({ name: '', url: '', description: '', is_active: true, show_on_homepage: true })
     setShowCreateForm(false)
+  }
+
+  const handleEditSubmit = (e: React.FormEvent) => {
+    e.preventDefault()
+    if (editingEndpoint) {
+      onUpdateEndpoint(editingEndpoint.id, formData)
+      setFormData({ name: '', url: '', description: '', is_active: true, show_on_homepage: true })
+      setShowEditForm(false)
+      setEditingEndpoint(null)
+    }
+  }
+
+  const handleEditEndpoint = (endpoint: APIEndpoint) => {
+    setEditingEndpoint(endpoint)
+    setFormData({
+      name: endpoint.name,
+      url: endpoint.url,
+      description: endpoint.description,
+      is_active: endpoint.is_active,
+      show_on_homepage: endpoint.show_on_homepage
+    })
+    setShowEditForm(true)
   }
 
   const loadEndpointDataSources = async (endpointId: number) => {
@@ -274,6 +309,78 @@ export default function EndpointsTab({ endpoints, onCreateEndpoint, onUpdateEndp
         </div>
       )}
 
+      {showEditForm && editingEndpoint && (
+        <div className="bg-card rounded-lg border p-6 mb-6">
+          <h3 className="text-lg font-medium mb-4">编辑端点</h3>
+          <form onSubmit={handleEditSubmit} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="edit-name">端点名称</Label>
+              <Input
+                id="edit-name"
+                type="text"
+                value={formData.name}
+                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                required
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="edit-url">URL路径</Label>
+              <Input
+                id="edit-url"
+                type="text"
+                value={formData.url}
+                onChange={(e) => setFormData({ ...formData, url: e.target.value })}
+                placeholder="例如: pic/anime"
+                required
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="edit-description">描述</Label>
+              <Textarea
+                id="edit-description"
+                value={formData.description}
+                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                rows={3}
+              />
+            </div>
+            <div className="flex space-x-6">
+              <div className="flex items-center space-x-2">
+                <Switch
+                  id="edit-is_active"
+                  checked={formData.is_active}
+                  onCheckedChange={(checked) => setFormData({ ...formData, is_active: checked })}
+                />
+                <Label htmlFor="edit-is_active">启用端点</Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <Switch
+                  id="edit-show_on_homepage"
+                  checked={formData.show_on_homepage}
+                  onCheckedChange={(checked) => setFormData({ ...formData, show_on_homepage: checked })}
+                />
+                <Label htmlFor="edit-show_on_homepage">显示在首页</Label>
+              </div>
+            </div>
+            <div className="flex space-x-3">
+              <Button type="submit">
+                更新
+              </Button>
+              <Button
+                type="button"
+                onClick={() => {
+                  setShowEditForm(false)
+                  setEditingEndpoint(null)
+                  setFormData({ name: '', url: '', description: '', is_active: true, show_on_homepage: true })
+                }}
+                variant="outline"
+              >
+                取消
+              </Button>
+            </div>
+          </form>
+        </div>
+      )}
+
       <div className="rounded-md border">
         <DndContext
           sensors={sensors}
@@ -302,6 +409,7 @@ export default function EndpointsTab({ endpoints, onCreateEndpoint, onUpdateEndp
                     key={endpoint.id}
                     endpoint={endpoint}
                     onManageDataSources={handleManageDataSources}
+                    onEditEndpoint={handleEditEndpoint}
                   />
                 ))}
               </SortableContext>

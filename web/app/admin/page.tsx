@@ -26,7 +26,7 @@ export default function AdminPage() {
 
   const createEndpoint = async (endpointData: Partial<APIEndpoint>) => {
     try {
-      const response = await authenticatedFetch('/api/admin/endpoints/', {
+      const response = await authenticatedFetch('/api/admin/endpoints', {
         method: 'POST',
         body: JSON.stringify(endpointData),
       })
@@ -42,10 +42,29 @@ export default function AdminPage() {
     }
   }
 
+  const updateEndpoint = async (id: number, endpointData: Partial<APIEndpoint>) => {
+    try {
+      const response = await authenticatedFetch(`/api/admin/endpoints/${id}`, {
+        method: 'PUT',
+        body: JSON.stringify(endpointData),
+      })
+
+      if (response.ok) {
+        loadEndpoints() // 重新加载数据
+      } else {
+        alert('更新端点失败')
+      }
+    } catch (error) {
+      console.error('Failed to update endpoint:', error)
+      alert('更新端点失败')
+    }
+  }
+
   return (
     <EndpointsTab 
       endpoints={endpoints} 
       onCreateEndpoint={createEndpoint}
+      onUpdateEndpoint={updateEndpoint}
       onUpdateEndpoints={loadEndpoints}
     />
   )
