@@ -1,6 +1,7 @@
 # Git
 .git
 .gitignore
+.gitattributes
 
 # IDE
 .vscode
@@ -8,10 +9,12 @@
 *.swp
 *.swo
 *~
+.cursor/
 
 # OS
 .DS_Store
 Thumbs.db
+desktop.ini
 
 # Logs
 *.log
@@ -19,9 +22,10 @@ logs/
 data/logs/
 data/server.log
 
-# Database
+# Database and runtime data
 data/data.db
 data/stats.json
+data/
 
 # Build artifacts
 random-api-go.exe
@@ -29,8 +33,16 @@ random-api-go
 random-api-test
 *.exe
 
+# Node.js build artifacts (will be rebuilt in Docker)
+web/node_modules/
+web/.next/
+web/out/
+web/.turbo/
+
 # Go
 vendor/
+*.test
+*.prof
 
 # Docker
 docker-compose*.yml
@@ -40,8 +52,17 @@ test-build.sh
 *.md
 DOCKER_DEPLOYMENT.md
 
+# Environment and config
+.env*
+!.env.example
+
+# GitHub
+.github/
+
 # Misc
-.env
-.env.local
-.env.example
+*.tmp
+*.temp
+.cache/
+
+# README
 README.md 
