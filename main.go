@@ -83,14 +83,8 @@ func (a *App) Initialize() error {
 	// 创建 handlers
 	handlers := handlers.NewHandlers(a.Stats)
 
-	// 设置路由
-	a.router.Setup(handlers)
-	a.router.SetupAdminRoutes(a.adminHandler)
-
-	// 设置静态文件路由（如果静态文件处理器存在）
-	if a.staticHandler != nil {
-		a.router.SetupStaticRoutes(a.staticHandler)
-	}
+	// 统一设置所有路由
+	a.router.SetupAllRoutes(handlers, a.adminHandler, a.staticHandler)
 
 	// 创建 HTTP 服务器
 	cfg := config.Get().Server

@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"random-api-go/database"
 	"random-api-go/monitoring"
-	"random-api-go/router"
 	"random-api-go/services"
 	"random-api-go/stats"
 	"random-api-go/utils"
@@ -270,15 +270,25 @@ func (h *Handlers) HandleMetrics(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(metrics)
 }
 
-func (h *Handlers) Setup(r *router.Router) {
-	// 通用路由处理 - 匹配所有路径
-	r.HandleFunc("/", h.HandleAPIRequest)
+// HandlePublicHomeConfig 处理公开的首页配置请求
+func (h *Handlers) HandlePublicHomeConfig(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
 
-	// API 统计和监控
-	r.HandleFunc("/api/stats", h.HandleStats)
-	r.HandleFunc("/api/urlstats", h.HandleURLStats)
-	r.HandleFunc("/api/metrics", h.HandleMetrics)
+	w.Header().Set("Content-Type", "application/json")
 
-	// 公开的端点信息接口
-	r.HandleFunc("/api/endpoints", h.HandlePublicEndpoints)
+	// 从数据库获取首页配置
+	content := database.GetConfig("homepage_content", "# 欢迎使用随机API服务\n\n这是一个可配置的随机API服务。")
+
+	response := map[string]interface{}{
+		"success": true,
+		"data":    map[string]string{"content": content},
+	}
+
+	if err := json.NewEncoder(w).Encode(response); err != nil {
+		http.Error(w, "Error encoding response", http.StatusInternalServerError)
+		return
+	}
 }

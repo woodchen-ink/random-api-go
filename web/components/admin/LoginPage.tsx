@@ -83,7 +83,7 @@ export default function LoginPage({ onLoginSuccess }: LoginPageProps) {
   const loadOAuthConfig = async () => {
     try {
       console.log('Loading OAuth config...')
-      const response = await fetch('/api/admin/oauth-config')
+      const response = await fetch('/api/oauth-config')
       console.log('OAuth config response status:', response.status)
       
       if (response.ok) {

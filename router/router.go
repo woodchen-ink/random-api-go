@@ -14,7 +14,16 @@ type Router struct {
 
 // Handler 接口定义处理器需要的方法
 type Handler interface {
-	Setup(r *Router)
+	// API请求处理
+	HandleAPIRequest(w http.ResponseWriter, r *http.Request)
+	// 统计相关
+	HandleStats(w http.ResponseWriter, r *http.Request)
+	HandleURLStats(w http.ResponseWriter, r *http.Request)
+	HandleMetrics(w http.ResponseWriter, r *http.Request)
+	// 公开端点
+	HandlePublicEndpoints(w http.ResponseWriter, r *http.Request)
+	// 公开首页配置
+	HandlePublicHomeConfig(w http.ResponseWriter, r *http.Request)
 }
 
 // StaticHandler 接口定义静态文件处理器需要的方法
@@ -62,20 +71,30 @@ func New() *Router {
 	}
 }
 
-func (r *Router) Setup(h Handler) {
-	// 设置API路由
-	h.Setup(r)
+// SetupAllRoutes 统一设置所有路由
+func (r *Router) SetupAllRoutes(handler Handler, adminHandler AdminHandler, staticHandler StaticHandler) {
+	// 设置公开API路由
+	r.HandleFunc("/", handler.HandleAPIRequest)
+	r.HandleFunc("/api/stats", handler.HandleStats)
+	r.HandleFunc("/api/urlstats", handler.HandleURLStats)
+	r.HandleFunc("/api/metrics", handler.HandleMetrics)
+	r.HandleFunc("/api/endpoints", handler.HandlePublicEndpoints)
+	r.HandleFunc("/api/home-config", handler.HandlePublicHomeConfig)
+
+	// 设置公开的OAuth配置路由
+	r.HandleFunc("/api/oauth-config", adminHandler.GetOAuthConfig)
+
+	// 设置管理后台路由
+	r.setupAdminRoutes(adminHandler)
+
+	// 设置静态文件路由
+	if staticHandler != nil {
+		r.staticHandler = staticHandler
+	}
 }
 
-// SetupStaticRoutes 设置静态文件路由
-func (r *Router) SetupStaticRoutes(staticHandler StaticHandler) {
-	r.staticHandler = staticHandler
-}
-
-// SetupAdminRoutes 设置管理后台路由
-func (r *Router) SetupAdminRoutes(adminHandler AdminHandler) {
-	// OAuth配置API（前端需要获取client_id等信息）- 不需要认证
-	r.HandleFunc("/api/admin/oauth-config", adminHandler.GetOAuthConfig)
+// setupAdminRoutes 设置管理后台路由（私有方法）
+func (r *Router) setupAdminRoutes(adminHandler AdminHandler) {
 	// OAuth令牌验证API（保留，以防需要）- 不需要认证
 	r.HandleFunc("/api/admin/oauth-verify", adminHandler.VerifyOAuthToken)
 	// OAuth回调处理（使用API前缀以便区分前后端）- 不需要认证

@@ -33,7 +33,7 @@ interface SystemMetrics {
 
 async function getHomePageConfig() {
   try {
-    const res = await apiFetch('/api/admin/home-config')
+    const res = await apiFetch('/api/home-config')
     if (!res.ok) {
       throw new Error('Failed to fetch home page config')
     }
