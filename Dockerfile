@@ -6,8 +6,8 @@ WORKDIR /app/web
 # 复制前端依赖文件
 COPY web/package*.json ./
 
-# 安装前端依赖
-RUN npm ci --only=production
+# 安装前端依赖（包括开发依赖，构建需要）
+RUN npm ci
 
 # 复制前端源代码
 COPY web/ ./
