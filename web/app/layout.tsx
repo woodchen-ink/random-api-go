@@ -3,8 +3,8 @@ import "./globals.css";
 
 
 export const metadata: Metadata = {
-  title: "Random-Api 随机文件API",
-  description: "随机图API, 随机视频等 ",
+  title: "Random-Api 随机API",
+  description: "随机图, 随机视频等, 接口丰富快速稳定",
 };
 
 export default function RootLayout({
