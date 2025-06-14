@@ -14,6 +14,7 @@ type Preloader struct {
 	dataSourceFetcher *DataSourceFetcher
 	cacheManager      *CacheManager
 	running           bool
+	paused            bool
 	stopChan          chan struct{}
 	mutex             sync.RWMutex
 }
@@ -53,6 +54,22 @@ func (p *Preloader) Stop() {
 	p.running = false
 	close(p.stopChan)
 	log.Println("预加载器已停止")
+}
+
+// PausePeriodicRefresh 暂停定期刷新
+func (p *Preloader) PausePeriodicRefresh() {
+	p.mutex.Lock()
+	defer p.mutex.Unlock()
+	p.paused = true
+	log.Println("预加载器定期刷新已暂停")
+}
+
+// ResumePeriodicRefresh 恢复定期刷新
+func (p *Preloader) ResumePeriodicRefresh() {
+	p.mutex.Lock()
+	defer p.mutex.Unlock()
+	p.paused = false
+	log.Println("预加载器定期刷新已恢复")
 }
 
 // PreloadDataSourceOnSave 在保存数据源时预加载数据
@@ -185,6 +202,16 @@ func (p *Preloader) runPeriodicRefresh() {
 
 // checkAndRefreshExpiredData 检查并刷新过期数据
 func (p *Preloader) checkAndRefreshExpiredData() {
+	// 检查是否暂停
+	p.mutex.RLock()
+	isPaused := p.paused
+	p.mutex.RUnlock()
+
+	if isPaused {
+		log.Println("预加载器定期刷新已暂停，跳过此次检查")
+		return
+	}
+
 	log.Println("开始检查过期数据...")
 
 	// 获取所有活跃的数据源

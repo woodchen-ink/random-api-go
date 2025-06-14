@@ -20,6 +20,8 @@ type Handler interface {
 	HandleStats(w http.ResponseWriter, r *http.Request)
 	HandleURLStats(w http.ResponseWriter, r *http.Request)
 	HandleMetrics(w http.ResponseWriter, r *http.Request)
+	// 健康检查
+	HandleHealth(w http.ResponseWriter, r *http.Request)
 	// 公开端点
 	HandlePublicEndpoints(w http.ResponseWriter, r *http.Request)
 	// 公开首页配置
@@ -78,6 +80,7 @@ func (r *Router) SetupAllRoutes(handler Handler, adminHandler AdminHandler, stat
 	r.HandleFunc("/api/stats", handler.HandleStats)
 	r.HandleFunc("/api/urlstats", handler.HandleURLStats)
 	r.HandleFunc("/api/metrics", handler.HandleMetrics)
+	r.HandleFunc("/api/health", handler.HandleHealth)
 	r.HandleFunc("/api/endpoints", handler.HandlePublicEndpoints)
 	r.HandleFunc("/api/home-config", handler.HandlePublicHomeConfig)
 

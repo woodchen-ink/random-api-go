@@ -7,6 +7,7 @@ import (
 	"log"
 	"net/http"
 	"random-api-go/database"
+	"random-api-go/initapp"
 	"random-api-go/monitoring"
 	"random-api-go/service"
 	"random-api-go/stats"
@@ -34,7 +35,7 @@ type Handlers struct {
 func NewHandlers(statsManager *stats.StatsManager) *Handlers {
 	return &Handlers{
 		Stats:         statsManager,
-		cacheDuration: 30 * time.Minute, // 缓存30分钟
+		cacheDuration: 5 * time.Minute, // 缓存5分钟，减少首次访问等待时间
 	}
 }
 
@@ -285,6 +286,30 @@ func (h *Handlers) HandlePublicHomeConfig(w http.ResponseWriter, r *http.Request
 	response := map[string]interface{}{
 		"success": true,
 		"data":    map[string]string{"content": content},
+	}
+
+	if err := json.NewEncoder(w).Encode(response); err != nil {
+		http.Error(w, "Error encoding response", http.StatusInternalServerError)
+		return
+	}
+}
+
+// HandleHealth 处理健康检查请求
+func (h *Handlers) HandleHealth(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+
+	// 获取初始化状态
+	initStatus := initapp.GetInitStatus()
+
+	response := map[string]interface{}{
+		"status":    "healthy",
+		"timestamp": time.Now().Unix(),
+		"init":      initStatus,
 	}
 
 	if err := json.NewEncoder(w).Encode(response); err != nil {

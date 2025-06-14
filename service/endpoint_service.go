@@ -355,6 +355,11 @@ func (s *EndpointService) GetPreloader() *Preloader {
 	return s.preloader
 }
 
+// GetCacheManager 获取缓存管理器（用于外部控制）
+func (s *EndpointService) GetCacheManager() *CacheManager {
+	return s.cacheManager
+}
+
 // GetDataSourceURLCount 获取数据源的URL数量
 func (s *EndpointService) GetDataSourceURLCount(dataSource *model.DataSource) (int, error) {
 	// 对于API类型和端点类型的数据源，返回1（因为每次都是实时请求）
@@ -362,11 +367,25 @@ func (s *EndpointService) GetDataSourceURLCount(dataSource *model.DataSource) (i
 		return 1, nil
 	}
 
-	// 对于其他类型的数据源，尝试获取实际的URL数量
-	urls, err := s.dataSourceFetcher.FetchURLs(dataSource)
-	if err != nil {
-		return 0, err
+	// 优先从内存缓存获取URL数量，避免触发耗时的网络请求
+	cacheKey := fmt.Sprintf("datasource_%d", dataSource.ID)
+	if cachedURLs, exists := s.cacheManager.GetFromMemoryCache(cacheKey); exists {
+		return len(cachedURLs), nil
 	}
 
-	return len(urls), nil
+	// 如果缓存中没有数据，返回估算值，避免在统计时触发耗时操作
+	switch dataSource.Type {
+	case "manual":
+		// 手动数据源可以快速解析配置获取数量
+		urls, err := s.dataSourceFetcher.FetchURLs(dataSource)
+		if err != nil {
+			return 0, nil // 返回0而不是错误，避免影响整体统计
+		}
+		return len(urls), nil
+	case "lankong":
+		// 兰空图床如果没有缓存，返回估算值
+		return 100, nil // 估算值
+	default:
+		return 0, nil
+	}
 }

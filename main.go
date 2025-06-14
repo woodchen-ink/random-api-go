@@ -12,6 +12,7 @@ import (
 	"random-api-go/config"
 	"random-api-go/database"
 	"random-api-go/handler"
+	"random-api-go/initapp"
 	"random-api-go/logging"
 	"random-api-go/router"
 	"random-api-go/service"
@@ -63,6 +64,13 @@ func (a *App) Initialize() error {
 
 	// 初始化端点服务
 	service.GetEndpointService()
+
+	// 预加载所有数据到内存
+	log.Println("开始预加载应用数据...")
+	if err := initapp.InitData(); err != nil {
+		log.Printf("预加载数据失败: %v", err)
+		// 不返回错误，允许应用继续启动
+	}
 
 	// 创建管理后台处理器
 	a.adminHandler = handler.NewAdminHandler()

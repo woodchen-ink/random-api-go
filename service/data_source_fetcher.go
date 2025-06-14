@@ -4,7 +4,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"random-api-go/database"
 	"random-api-go/model"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -18,11 +20,41 @@ type DataSourceFetcher struct {
 
 // NewDataSourceFetcher 创建数据源获取器
 func NewDataSourceFetcher(cacheManager *CacheManager) *DataSourceFetcher {
+	// 从配置中获取兰空图床最大重试次数
+	maxRetries := getIntConfig("lankong_max_retries", 7)
+
+	var lankongFetcher *LankongFetcher
+	if maxRetries > 0 {
+		// 使用自定义配置
+		lankongFetcher = NewLankongFetcherWithConfig(maxRetries)
+		log.Printf("兰空图床获取器配置: 最大重试%d次", maxRetries)
+	} else {
+		// 使用默认配置
+		lankongFetcher = NewLankongFetcher()
+		log.Printf("兰空图床获取器使用默认配置")
+	}
+
 	return &DataSourceFetcher{
 		cacheManager:   cacheManager,
-		lankongFetcher: NewLankongFetcher(),
+		lankongFetcher: lankongFetcher,
 		apiFetcher:     NewAPIFetcher(),
 	}
+}
+
+// getIntConfig 获取整数配置，如果不存在或无效则返回默认值
+func getIntConfig(key string, defaultValue int) int {
+	configStr := database.GetConfig(key, "")
+	if configStr == "" {
+		return defaultValue
+	}
+
+	value, err := strconv.Atoi(configStr)
+	if err != nil {
+		log.Printf("配置 %s 的值 '%s' 不是有效整数，使用默认值 %d", key, configStr, defaultValue)
+		return defaultValue
+	}
+
+	return value
 }
 
 // FetchURLs 从数据源获取URL列表
