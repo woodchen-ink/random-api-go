@@ -9,6 +9,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"time"
 )
 
 // CachedEndpoint 缓存的端点数据
@@ -93,7 +94,22 @@ func (s *EndpointService) ListEndpoints() ([]*models.APIEndpoint, error) {
 
 // UpdateEndpoint 更新API端点
 func (s *EndpointService) UpdateEndpoint(endpoint *models.APIEndpoint) error {
-	if err := database.DB.Save(endpoint).Error; err != nil {
+	// 只更新指定字段，避免覆盖 created_at 和 sort_order 等字段
+	updates := map[string]interface{}{
+		"name":             endpoint.Name,
+		"url":              endpoint.URL,
+		"description":      endpoint.Description,
+		"is_active":        endpoint.IsActive,
+		"show_on_homepage": endpoint.ShowOnHomepage,
+		"updated_at":       time.Now(),
+	}
+
+	// 如果 sort_order 不为 0，则更新它（0 表示未设置）
+	if endpoint.SortOrder != 0 {
+		updates["sort_order"] = endpoint.SortOrder
+	}
+
+	if err := database.DB.Model(&models.APIEndpoint{}).Where("id = ?", endpoint.ID).Updates(updates).Error; err != nil {
 		return fmt.Errorf("failed to update endpoint: %w", err)
 	}
 
