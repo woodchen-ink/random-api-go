@@ -86,7 +86,7 @@ async function getSystemMetrics(): Promise<SystemMetrics | null> {
 
 async function getEndpoints() {
   try {
-    const res = await apiFetch('/api/admin/endpoints')
+    const res = await apiFetch('/api/endpoints')
     if (!res.ok) {
       throw new Error('Failed to fetch endpoints')
     }

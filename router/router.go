@@ -2,14 +2,17 @@ package router
 
 import (
 	"net/http"
+	"random-api-go/middleware"
 	"strings"
 )
 
 type Router struct {
-	mux           *http.ServeMux
-	staticHandler StaticHandler
+	mux            *http.ServeMux
+	staticHandler  StaticHandler
+	authMiddleware *middleware.AuthMiddleware
 }
 
+// Handler 接口定义处理器需要的方法
 type Handler interface {
 	Setup(r *Router)
 }
@@ -54,7 +57,8 @@ type AdminHandler interface {
 
 func New() *Router {
 	return &Router{
-		mux: http.NewServeMux(),
+		mux:            http.NewServeMux(),
+		authMiddleware: middleware.NewAuthMiddleware(),
 	}
 }
 
@@ -70,44 +74,44 @@ func (r *Router) SetupStaticRoutes(staticHandler StaticHandler) {
 
 // SetupAdminRoutes 设置管理后台路由
 func (r *Router) SetupAdminRoutes(adminHandler AdminHandler) {
-	// OAuth配置API（前端需要获取client_id等信息）
+	// OAuth配置API（前端需要获取client_id等信息）- 不需要认证
 	r.HandleFunc("/api/admin/oauth-config", adminHandler.GetOAuthConfig)
-	// OAuth令牌验证API（保留，以防需要）
+	// OAuth令牌验证API（保留，以防需要）- 不需要认证
 	r.HandleFunc("/api/admin/oauth-verify", adminHandler.VerifyOAuthToken)
-	// OAuth回调处理（使用API前缀以便区分前后端）
+	// OAuth回调处理（使用API前缀以便区分前后端）- 不需要认证
 	r.HandleFunc("/api/admin/oauth/callback", adminHandler.HandleOAuthCallback)
 
-	// 管理后台API路由
-	r.HandleFunc("/api/admin/endpoints", adminHandler.HandleEndpoints)
+	// 管理后台API路由 - 需要认证
+	r.HandleFunc("/api/admin/endpoints", r.authMiddleware.RequireAuth(adminHandler.HandleEndpoints))
 
-	// 端点排序路由
-	r.HandleFunc("/api/admin/endpoints/sort-order", adminHandler.UpdateEndpointSortOrder)
+	// 端点排序路由 - 需要认证
+	r.HandleFunc("/api/admin/endpoints/sort-order", r.authMiddleware.RequireAuth(adminHandler.UpdateEndpointSortOrder))
 
-	// 数据源路由 - 需要在端点路由之前注册，因为路径更具体
-	r.HandleFunc("/api/admin/data-sources", adminHandler.CreateDataSource)
+	// 数据源路由 - 需要认证
+	r.HandleFunc("/api/admin/data-sources", r.authMiddleware.RequireAuth(adminHandler.CreateDataSource))
 
-	// 端点相关路由 - 使用通配符处理所有端点相关请求
-	r.HandleFunc("/api/admin/endpoints/", func(w http.ResponseWriter, r *http.Request) {
+	// 端点相关路由 - 需要认证
+	r.HandleFunc("/api/admin/endpoints/", r.authMiddleware.RequireAuth(func(w http.ResponseWriter, r *http.Request) {
 		path := r.URL.Path
 		if strings.Contains(path, "/data-sources") {
 			adminHandler.HandleEndpointDataSources(w, r)
 		} else {
 			adminHandler.HandleEndpointByID(w, r)
 		}
-	})
+	}))
 
-	// 数据源操作路由 - 使用通配符处理所有数据源相关请求
-	r.HandleFunc("/api/admin/data-sources/", func(w http.ResponseWriter, r *http.Request) {
+	// 数据源操作路由 - 需要认证
+	r.HandleFunc("/api/admin/data-sources/", r.authMiddleware.RequireAuth(func(w http.ResponseWriter, r *http.Request) {
 		path := r.URL.Path
 		if strings.Contains(path, "/sync") {
 			adminHandler.SyncDataSource(w, r)
 		} else {
 			adminHandler.HandleDataSourceByID(w, r)
 		}
-	})
+	}))
 
-	// URL替换规则路由
-	r.HandleFunc("/api/admin/url-replace-rules", func(w http.ResponseWriter, r *http.Request) {
+	// URL替换规则路由 - 需要认证
+	r.HandleFunc("/api/admin/url-replace-rules", r.authMiddleware.RequireAuth(func(w http.ResponseWriter, r *http.Request) {
 		if r.Method == http.MethodGet {
 			adminHandler.ListURLReplaceRules(w, r)
 		} else if r.Method == http.MethodPost {
@@ -115,27 +119,27 @@ func (r *Router) SetupAdminRoutes(adminHandler AdminHandler) {
 		} else {
 			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		}
-	})
-	r.HandleFunc("/api/admin/url-replace-rules/", adminHandler.HandleURLReplaceRuleByID)
+	}))
+	r.HandleFunc("/api/admin/url-replace-rules/", r.authMiddleware.RequireAuth(adminHandler.HandleURLReplaceRuleByID))
 
-	// 首页配置路由
-	r.HandleFunc("/api/admin/home-config", func(w http.ResponseWriter, r *http.Request) {
+	// 首页配置路由 - 需要认证
+	r.HandleFunc("/api/admin/home-config", r.authMiddleware.RequireAuth(func(w http.ResponseWriter, r *http.Request) {
 		if r.Method == http.MethodGet {
 			adminHandler.GetHomePageConfig(w, r)
 		} else {
 			adminHandler.UpdateHomePageConfig(w, r)
 		}
-	})
+	}))
 
-	// 通用配置管理路由
-	r.HandleFunc("/api/admin/configs", adminHandler.ListConfigs)
-	r.HandleFunc("/api/admin/configs/", func(w http.ResponseWriter, r *http.Request) {
+	// 通用配置管理路由 - 需要认证
+	r.HandleFunc("/api/admin/configs", r.authMiddleware.RequireAuth(adminHandler.ListConfigs))
+	r.HandleFunc("/api/admin/configs/", r.authMiddleware.RequireAuth(func(w http.ResponseWriter, r *http.Request) {
 		if r.Method == http.MethodDelete {
 			adminHandler.DeleteConfigByKey(w, r)
 		} else {
 			adminHandler.CreateOrUpdateConfig(w, r)
 		}
-	})
+	}))
 }
 
 func (r *Router) HandleFunc(pattern string, handler func(http.ResponseWriter, *http.Request)) {

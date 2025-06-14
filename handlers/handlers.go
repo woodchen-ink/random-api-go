@@ -12,6 +12,7 @@ import (
 	"random-api-go/stats"
 	"random-api-go/utils"
 	"strings"
+	"sync"
 	"time"
 )
 
@@ -22,6 +23,19 @@ type Router interface {
 type Handlers struct {
 	Stats           *stats.StatsManager
 	endpointService *services.EndpointService
+	urlStatsCache   map[string]struct {
+		TotalURLs int `json:"total_urls"`
+	}
+	urlStatsCacheTime time.Time
+	urlStatsMutex     sync.RWMutex
+	cacheDuration     time.Duration
+}
+
+func NewHandlers(statsManager *stats.StatsManager) *Handlers {
+	return &Handlers{
+		Stats:         statsManager,
+		cacheDuration: 5 * time.Minute, // 缓存5分钟
+	}
 }
 
 func (h *Handlers) HandleAPIRequest(w http.ResponseWriter, r *http.Request) {
@@ -116,10 +130,82 @@ func (h *Handlers) HandleStats(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func (h *Handlers) HandlePublicEndpoints(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+
+	// 使用端点服务获取端点信息
+	if h.endpointService == nil {
+		h.endpointService = services.GetEndpointService()
+	}
+
+	endpoints, err := h.endpointService.ListEndpoints()
+	if err != nil {
+		http.Error(w, "Error getting endpoints", http.StatusInternalServerError)
+		return
+	}
+
+	// 只返回公开信息，不包含数据源配置
+	type PublicEndpoint struct {
+		ID             uint   `json:"id"`
+		Name           string `json:"name"`
+		URL            string `json:"url"`
+		Description    string `json:"description"`
+		IsActive       bool   `json:"is_active"`
+		ShowOnHomepage bool   `json:"show_on_homepage"`
+		SortOrder      int    `json:"sort_order"`
+		CreatedAt      string `json:"created_at"`
+		UpdatedAt      string `json:"updated_at"`
+	}
+
+	var publicEndpoints []PublicEndpoint
+	for _, endpoint := range endpoints {
+		publicEndpoints = append(publicEndpoints, PublicEndpoint{
+			ID:             endpoint.ID,
+			Name:           endpoint.Name,
+			URL:            endpoint.URL,
+			Description:    endpoint.Description,
+			IsActive:       endpoint.IsActive,
+			ShowOnHomepage: endpoint.ShowOnHomepage,
+			SortOrder:      endpoint.SortOrder,
+			CreatedAt:      endpoint.CreatedAt.Format(time.RFC3339),
+			UpdatedAt:      endpoint.UpdatedAt.Format(time.RFC3339),
+		})
+	}
+
+	response := map[string]interface{}{
+		"success": true,
+		"data":    publicEndpoints,
+	}
+
+	if err := json.NewEncoder(w).Encode(response); err != nil {
+		http.Error(w, "Error encoding response", http.StatusInternalServerError)
+		return
+	}
+}
+
 func (h *Handlers) HandleURLStats(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
-	// 使用新的端点服务获取统计信息
+	// 检查缓存是否有效
+	h.urlStatsMutex.RLock()
+	if h.urlStatsCache != nil && time.Since(h.urlStatsCacheTime) < h.cacheDuration {
+		// 使用缓存数据
+		cache := h.urlStatsCache
+		h.urlStatsMutex.RUnlock()
+
+		if err := json.NewEncoder(w).Encode(cache); err != nil {
+			http.Error(w, "Error encoding response", http.StatusInternalServerError)
+		}
+		return
+	}
+	h.urlStatsMutex.RUnlock()
+
+	// 缓存过期或不存在，重新计算
 	if h.endpointService == nil {
 		h.endpointService = services.GetEndpointService()
 	}
@@ -166,6 +252,12 @@ func (h *Handlers) HandleURLStats(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	// 更新缓存
+	h.urlStatsMutex.Lock()
+	h.urlStatsCache = response
+	h.urlStatsCacheTime = time.Now()
+	h.urlStatsMutex.Unlock()
+
 	if err := json.NewEncoder(w).Encode(response); err != nil {
 		http.Error(w, "Error encoding response", http.StatusInternalServerError)
 		return
@@ -186,4 +278,7 @@ func (h *Handlers) Setup(r *router.Router) {
 	r.HandleFunc("/api/stats", h.HandleStats)
 	r.HandleFunc("/api/urlstats", h.HandleURLStats)
 	r.HandleFunc("/api/metrics", h.HandleMetrics)
+
+	// 公开的端点信息接口
+	r.HandleFunc("/api/endpoints", h.HandlePublicEndpoints)
 }

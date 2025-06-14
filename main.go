@@ -81,9 +81,7 @@ func (a *App) Initialize() error {
 	}
 
 	// 创建 handlers
-	handlers := &handlers.Handlers{
-		Stats: a.Stats,
-	}
+	handlers := handlers.NewHandlers(a.Stats)
 
 	// 设置路由
 	a.router.Setup(handlers)
