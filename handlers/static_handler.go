@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"fmt"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -17,31 +18,17 @@ func NewStaticHandler(staticDir string) *StaticHandler {
 	}
 }
 
-// ServeStatic 处理静态文件请求
+// ServeStatic 处理静态文件请求，实现类似 Nginx try_files 的逻辑
 func (s *StaticHandler) ServeStatic(w http.ResponseWriter, r *http.Request) {
-	// 获取请求路径
 	path := r.URL.Path
 
-	// 如果是根路径，重定向到 index.html
-	if path == "/" {
-		path = "/index.html"
-	}
+	// 添加调试日志
+	fmt.Printf("DEBUG: 请求路径: %s\n", path)
 
-	// 处理 Next.js 静态导出的路由问题
-	filePath := s.resolveFilePath(path)
+	// 实现 try_files $uri $uri/ @router 逻辑
+	filePath := s.tryFiles(path)
 
-	// 检查文件是否存在
-	if _, err := os.Stat(filePath); os.IsNotExist(err) {
-		// 如果文件不存在，检查是否是前端路由
-		if s.isFrontendRoute(path) {
-			// 对于前端路由，返回 index.html
-			filePath = filepath.Join(s.staticDir, "index.html")
-		} else {
-			// 不是前端路由，返回 404
-			http.NotFound(w, r)
-			return
-		}
-	}
+	fmt.Printf("DEBUG: 最终文件路径: %s\n", filePath)
 
 	// 设置正确的 Content-Type
 	s.setContentType(w, filePath)
@@ -50,63 +37,63 @@ func (s *StaticHandler) ServeStatic(w http.ResponseWriter, r *http.Request) {
 	http.ServeFile(w, r, filePath)
 }
 
-// resolveFilePath 解析文件路径，处理 Next.js 静态导出的路由问题
-func (s *StaticHandler) resolveFilePath(path string) string {
-	// 移除查询参数和锚点
-	if idx := strings.Index(path, "?"); idx != -1 {
-		path = path[:idx]
-	}
-	if idx := strings.Index(path, "#"); idx != -1 {
-		path = path[:idx]
+// tryFiles 实现类似 Nginx try_files 的逻辑
+func (s *StaticHandler) tryFiles(requestPath string) string {
+	// 清理路径
+	if requestPath == "" {
+		requestPath = "/"
 	}
 
-	// 构建初始文件路径
-	filePath := filepath.Join(s.staticDir, path)
+	// 移除查询参数
+	if idx := strings.Index(requestPath, "?"); idx != -1 {
+		requestPath = requestPath[:idx]
+	}
 
-	// 如果路径以斜杠结尾，尝试查找 index.html
-	if strings.HasSuffix(path, "/") {
-		indexPath := filepath.Join(filePath, "index.html")
-		if _, err := os.Stat(indexPath); err == nil {
-			return indexPath
-		}
-	} else {
-		// 如果路径不以斜杠结尾，先检查是否存在对应的文件
-		if _, err := os.Stat(filePath); err == nil {
-			return filePath
+	// 1. 尝试 $uri - 直接文件路径
+	directPath := filepath.Join(s.staticDir, requestPath)
+	if s.fileExists(directPath) && !s.isDirectory(directPath) {
+		fmt.Printf("DEBUG: 找到直接文件: %s\n", directPath)
+		return directPath
+	}
+
+	// 2. 尝试 $uri/ - 目录下的 index.html
+	if requestPath != "/" {
+		dirPath := filepath.Join(s.staticDir, requestPath)
+		if s.isDirectory(dirPath) {
+			indexPath := filepath.Join(dirPath, "index.html")
+			if s.fileExists(indexPath) {
+				fmt.Printf("DEBUG: 找到目录下的 index.html: %s\n", indexPath)
+				return indexPath
+			}
 		}
 
-		// 如果文件不存在，尝试查找对应目录下的 index.html
-		indexPath := filepath.Join(filePath, "index.html")
-		if _, err := os.Stat(indexPath); err == nil {
-			return indexPath
-		}
-
-		// 尝试添加 .html 扩展名
-		htmlPath := filePath + ".html"
-		if _, err := os.Stat(htmlPath); err == nil {
+		// 也尝试添加 .html 扩展名
+		htmlPath := directPath + ".html"
+		if s.fileExists(htmlPath) {
+			fmt.Printf("DEBUG: 找到 HTML 文件: %s\n", htmlPath)
 			return htmlPath
 		}
 	}
 
-	return filePath
+	// 3. @router - 回退到根目录的 index.html (SPA 路由处理)
+	fallbackPath := filepath.Join(s.staticDir, "index.html")
+	fmt.Printf("DEBUG: 回退到根 index.html: %s\n", fallbackPath)
+	return fallbackPath
 }
 
-// isFrontendRoute 判断是否是前端路由
-func (s *StaticHandler) isFrontendRoute(path string) bool {
-	// 前端路由通常以 /admin 开头
-	if strings.HasPrefix(path, "/admin") {
-		return true
-	}
+// fileExists 检查文件是否存在
+func (s *StaticHandler) fileExists(path string) bool {
+	_, err := os.Stat(path)
+	return err == nil
+}
 
-	// 排除 API 路径和静态资源
-	if strings.HasPrefix(path, "/api/") ||
-		strings.HasPrefix(path, "/_next/") ||
-		strings.HasPrefix(path, "/static/") ||
-		strings.Contains(path, ".") {
+// isDirectory 检查路径是否为目录
+func (s *StaticHandler) isDirectory(path string) bool {
+	info, err := os.Stat(path)
+	if err != nil {
 		return false
 	}
-
-	return false
+	return info.IsDir()
 }
 
 // setContentType 设置正确的 Content-Type
