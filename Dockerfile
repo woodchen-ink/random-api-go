@@ -3,26 +3,14 @@ FROM node:22-alpine AS frontend-builder
 
 WORKDIR /app/web
 
-# 复制前端依赖文件（优先缓存依赖层）
+# 复制前端依赖文件
 COPY web/package*.json ./
 
 # 安装前端依赖（包括开发依赖，构建需要）
-RUN npm ci --prefer-offline --no-audit --progress=false
+RUN npm ci
 
-# 复制前端配置文件
-COPY web/next.config.ts ./
-COPY web/tsconfig.json ./
-COPY web/postcss.config.mjs ./
-COPY web/components.json ./
-COPY web/eslint.config.mjs ./
-COPY web/next-env.d.ts ./
-
-# 复制前端源代码目录
-COPY web/app ./app
-COPY web/components ./components
-COPY web/lib ./lib
-COPY web/types ./types
-COPY web/public ./public
+# 复制前端源代码
+COPY web/ ./
 
 # 构建前端静态文件
 RUN npm run build
@@ -45,19 +33,15 @@ RUN go mod download && go mod verify
 COPY . .
 
 # 构建后端应用
-RUN CGO_ENABLED=0 GOOS=linux GOARCH=$TARGETARCH go build \
-    -ldflags='-w -s -extldflags "-static"' \
-    -a -installsuffix cgo \
-    -o random-api .
+RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o random-api .
 
 # 运行阶段
 FROM alpine:latest
 
 # 安装必要的工具
-RUN apk --no-cache add ca-certificates tzdata tini && \
-    adduser -D -s /bin/sh appuser
+RUN apk --no-cache add ca-certificates tzdata tini
 
-WORKDIR /app
+WORKDIR /root/
 
 # 从后端构建阶段复制二进制文件
 COPY --from=backend-builder /app/random-api .
@@ -65,12 +49,8 @@ COPY --from=backend-builder /app/random-api .
 # 从前端构建阶段复制静态文件
 COPY --from=frontend-builder /app/web/out ./web/out
 
-# 创建必要的目录并设置权限
-RUN mkdir -p /app/data/logs && \
-    chown -R appuser:appuser /app
-
-# 切换到非root用户
-USER appuser
+# 创建必要的目录
+RUN mkdir -p /root/data/logs
 
 # 暴露端口
 EXPOSE 5003
