@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	"fmt"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -22,13 +21,8 @@ func NewStaticHandler(staticDir string) *StaticHandler {
 func (s *StaticHandler) ServeStatic(w http.ResponseWriter, r *http.Request) {
 	path := r.URL.Path
 
-	// 添加调试日志
-	fmt.Printf("DEBUG: 请求路径: %s\n", path)
-
 	// 实现 try_files $uri $uri/ @router 逻辑
 	filePath := s.tryFiles(path)
-
-	fmt.Printf("DEBUG: 最终文件路径: %s\n", filePath)
 
 	// 设置正确的 Content-Type
 	s.setContentType(w, filePath)
@@ -52,7 +46,6 @@ func (s *StaticHandler) tryFiles(requestPath string) string {
 	// 1. 尝试 $uri - 直接文件路径
 	directPath := filepath.Join(s.staticDir, requestPath)
 	if s.fileExists(directPath) && !s.isDirectory(directPath) {
-		fmt.Printf("DEBUG: 找到直接文件: %s\n", directPath)
 		return directPath
 	}
 
@@ -62,7 +55,6 @@ func (s *StaticHandler) tryFiles(requestPath string) string {
 		if s.isDirectory(dirPath) {
 			indexPath := filepath.Join(dirPath, "index.html")
 			if s.fileExists(indexPath) {
-				fmt.Printf("DEBUG: 找到目录下的 index.html: %s\n", indexPath)
 				return indexPath
 			}
 		}
@@ -70,14 +62,12 @@ func (s *StaticHandler) tryFiles(requestPath string) string {
 		// 也尝试添加 .html 扩展名
 		htmlPath := directPath + ".html"
 		if s.fileExists(htmlPath) {
-			fmt.Printf("DEBUG: 找到 HTML 文件: %s\n", htmlPath)
 			return htmlPath
 		}
 	}
 
 	// 3. @router - 回退到根目录的 index.html (SPA 路由处理)
 	fallbackPath := filepath.Join(s.staticDir, "index.html")
-	fmt.Printf("DEBUG: 回退到根 index.html: %s\n", fallbackPath)
 	return fallbackPath
 }
 
