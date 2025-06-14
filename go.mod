@@ -6,7 +6,7 @@ toolchain go1.23.1
 
 require (
 	github.com/glebarez/sqlite v1.11.0
-	golang.org/x/time v0.11.0
+	golang.org/x/time v0.12.0
 	gorm.io/gorm v1.30.0
 )
 
