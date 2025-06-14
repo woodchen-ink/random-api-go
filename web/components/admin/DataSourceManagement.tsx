@@ -28,7 +28,6 @@ export default function DataSourceManagement({
     name: '',
     type: 'manual' as 'lankong' | 'manual' | 'api_get' | 'api_post' | 'endpoint',
     config: '',
-    cache_duration: 3600,
     is_active: true
   })
 
@@ -56,7 +55,7 @@ export default function DataSourceManagement({
 
       if (response.ok) {
         onUpdate()
-        setFormData({ name: '', type: 'manual' as const, config: '', cache_duration: 3600, is_active: true })
+        setFormData({ name: '', type: 'manual' as const, config: '', is_active: true })
         setShowCreateForm(false)
         alert('数据源创建成功')
       } else {
@@ -111,7 +110,7 @@ export default function DataSourceManagement({
 
       if (response.ok) {
         onUpdate()
-        setFormData({ name: '', type: 'manual' as const, config: '', cache_duration: 3600, is_active: true })
+        setFormData({ name: '', type: 'manual' as const, config: '',  is_active: true })
         setEditingDataSource(null)
         alert('数据源更新成功')
       } else {
@@ -145,7 +144,6 @@ export default function DataSourceManagement({
       name: dataSource.name,
       type: dataSource.type,
       config: config,
-      cache_duration: dataSource.cache_duration,
       is_active: dataSource.is_active
     })
     setShowCreateForm(false) // 关闭创建表单
@@ -153,7 +151,7 @@ export default function DataSourceManagement({
 
   const cancelEdit = () => {
     setEditingDataSource(null)
-    setFormData({ name: '', type: 'manual' as const, config: '', cache_duration: 3600, is_active: true })
+    setFormData({ name: '', type: 'manual' as const, config: '', is_active: true })
   }
 
   const deleteDataSource = async (dataSourceId: number) => {
@@ -217,7 +215,7 @@ export default function DataSourceManagement({
               onClick={() => {
                 setShowCreateForm(true)
                 setEditingDataSource(null)
-                setFormData({ name: '', type: 'manual' as const, config: '', cache_duration: 3600, is_active: true })
+                setFormData({ name: '', type: 'manual' as const, config: '', is_active: true })
               }}
               size="sm"
             >
@@ -264,19 +262,6 @@ export default function DataSourceManagement({
                   onChange={(config) => setFormData({ ...formData, config })}
                 />
                 <div className="grid grid-cols-2 gap-3">
-                  <div className="space-y-1">
-                    <Label htmlFor="ds-cache">缓存时长(秒)</Label>
-                    <Input
-                      id="ds-cache"
-                      type="number"
-                      value={formData.cache_duration}
-                      onChange={(e) => setFormData({ ...formData, cache_duration: parseInt(e.target.value) || 0 })}
-                      min="0"
-                    />
-                    <p className="text-xs text-muted-foreground">
-                      设置为0表示不缓存，建议设置3600秒(1小时)以上
-                    </p>
-                  </div>
                   <div className="flex items-center space-x-2 pt-6">
                     <Switch
                       id="ds-active"
@@ -310,7 +295,6 @@ export default function DataSourceManagement({
                   <TableHead>名称</TableHead>
                   <TableHead>类型</TableHead>
                   <TableHead>状态</TableHead>
-                  <TableHead>缓存时长</TableHead>
                   <TableHead>最后同步</TableHead>
                   <TableHead>操作</TableHead>
                 </TableRow>
@@ -335,9 +319,6 @@ export default function DataSourceManagement({
                         }`}>
                           {dataSource.is_active ? '启用' : '禁用'}
                         </span>
-                      </TableCell>
-                      <TableCell>
-                        {dataSource.cache_duration > 0 ? `${dataSource.cache_duration}秒` : '不缓存'}
                       </TableCell>
                       <TableCell>
                         {dataSource.last_sync ? new Date(dataSource.last_sync).toLocaleString() : '未同步'}

@@ -23,7 +23,6 @@ export interface DataSource {
   name: string
   type: 'lankong' | 'manual' | 'api_get' | 'api_post' | 'endpoint'
   config: string
-  cache_duration: number
   is_active: boolean
   last_sync?: string
   created_at: string

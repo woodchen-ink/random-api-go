@@ -26,21 +26,19 @@ type APIEndpoint struct {
 
 // DataSource 数据源模型
 type DataSource struct {
-	ID            uint           `json:"id" gorm:"primaryKey"`
-	EndpointID    uint           `json:"endpoint_id" gorm:"not null;index"`
-	Name          string         `json:"name" gorm:"not null"`
-	Type          string         `json:"type" gorm:"not null;check:type IN ('lankong', 'manual', 'api_get', 'api_post', 'endpoint')"`
-	Config        string         `json:"config" gorm:"not null"`
-	CacheDuration int            `json:"cache_duration" gorm:"default:3600"` // 缓存时长（秒）
-	IsActive      bool           `json:"is_active" gorm:"default:true"`
-	LastSync      *time.Time     `json:"last_sync,omitempty"`
-	CreatedAt     time.Time      `json:"created_at"`
-	UpdatedAt     time.Time      `json:"updated_at"`
-	DeletedAt     gorm.DeletedAt `json:"-" gorm:"index"`
+	ID         uint           `json:"id" gorm:"primaryKey"`
+	EndpointID uint           `json:"endpoint_id" gorm:"not null;index"`
+	Name       string         `json:"name" gorm:"not null"`
+	Type       string         `json:"type" gorm:"not null;check:type IN ('lankong', 'manual', 'api_get', 'api_post', 'endpoint')"`
+	Config     string         `json:"config" gorm:"not null"`
+	IsActive   bool           `json:"is_active" gorm:"default:true"`
+	LastSync   *time.Time     `json:"last_sync,omitempty"`
+	CreatedAt  time.Time      `json:"created_at"`
+	UpdatedAt  time.Time      `json:"updated_at"`
+	DeletedAt  gorm.DeletedAt `json:"-" gorm:"index"`
 
 	// 关联
-	Endpoint   APIEndpoint `json:"-" gorm:"foreignKey:EndpointID"`
-	CachedURLs []CachedURL `json:"-" gorm:"foreignKey:DataSourceID"`
+	Endpoint APIEndpoint `json:"-" gorm:"foreignKey:EndpointID"`
 }
 
 // URLReplaceRule URL替换规则模型
@@ -57,19 +55,6 @@ type URLReplaceRule struct {
 
 	// 关联
 	Endpoint *APIEndpoint `json:"endpoint,omitempty" gorm:"foreignKey:EndpointID"`
-}
-
-// CachedURL 缓存URL模型
-type CachedURL struct {
-	ID           uint      `json:"id" gorm:"primaryKey"`
-	DataSourceID uint      `json:"data_source_id" gorm:"not null;index"`
-	OriginalURL  string    `json:"original_url" gorm:"not null"`
-	FinalURL     string    `json:"final_url" gorm:"not null"`
-	ExpiresAt    time.Time `json:"expires_at" gorm:"index"`
-	CreatedAt    time.Time `json:"created_at"`
-
-	// 关联
-	DataSource DataSource `json:"-" gorm:"foreignKey:DataSourceID"`
 }
 
 // Config 通用配置表

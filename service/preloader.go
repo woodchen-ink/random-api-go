@@ -1,6 +1,7 @@
 package service
 
 import (
+	"fmt"
 	"log"
 	"random-api-go/database"
 	"random-api-go/model"
@@ -202,9 +203,10 @@ func (p *Preloader) checkAndRefreshExpiredData() {
 			continue
 		}
 
-		// 检查缓存是否即将过期（提前5分钟刷新）
-		cachedURLs, err := p.cacheManager.GetFromDBCache(dataSource.ID)
-		if err != nil || len(cachedURLs) == 0 {
+		// 检查内存缓存是否存在
+		cacheKey := fmt.Sprintf("datasource_%d", dataSource.ID)
+		cachedURLs, exists := p.cacheManager.GetFromMemoryCache(cacheKey)
+		if !exists || len(cachedURLs) == 0 {
 			// 没有缓存数据，需要刷新
 			refreshCount++
 			wg.Add(1)

@@ -391,9 +391,7 @@ func (h *AdminHandler) UpdateDataSource(w http.ResponseWriter, r *http.Request) 
 	if updateData.Config != "" {
 		dataSource.Config = updateData.Config
 	}
-	if updateData.CacheDuration != 0 {
-		dataSource.CacheDuration = updateData.CacheDuration
-	}
+
 	dataSource.IsActive = updateData.IsActive
 
 	// 使用服务更新数据源（会自动预加载）

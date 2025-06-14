@@ -62,7 +62,6 @@ func autoMigrate() error {
 		&model.APIEndpoint{},
 		&model.DataSource{},
 		&model.URLReplaceRule{},
-		&model.CachedURL{},
 		&model.Config{},
 	)
 }
@@ -77,11 +76,6 @@ func Close() error {
 		return sqlDB.Close()
 	}
 	return nil
-}
-
-// CleanExpiredCache 清理过期缓存
-func CleanExpiredCache() error {
-	return DB.Where("expires_at < ?", time.Now()).Delete(&model.CachedURL{}).Error
 }
 
 // GetConfig 获取配置值

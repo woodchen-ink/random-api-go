@@ -33,9 +33,12 @@ func (dsf *DataSourceFetcher) FetchURLs(dataSource *model.DataSource) ([]string,
 		return dsf.fetchAPIURLs(dataSource)
 	}
 
-	// 其他类型的数据源先检查数据库缓存
-	if cachedURLs, err := dsf.cacheManager.GetFromDBCache(dataSource.ID); err == nil && len(cachedURLs) > 0 {
-		log.Printf("从数据库缓存获取到 %d 个URL (数据源ID: %d)", len(cachedURLs), dataSource.ID)
+	// 构建内存缓存的key（使用数据源ID）
+	cacheKey := fmt.Sprintf("datasource_%d", dataSource.ID)
+
+	// 先检查内存缓存
+	if cachedURLs, exists := dsf.cacheManager.GetFromMemoryCache(cacheKey); exists && len(cachedURLs) > 0 {
+		log.Printf("从内存缓存获取到 %d 个URL (数据源ID: %d)", len(cachedURLs), dataSource.ID)
 		return cachedURLs, nil
 	}
 
@@ -64,20 +67,9 @@ func (dsf *DataSourceFetcher) FetchURLs(dataSource *model.DataSource) ([]string,
 		return urls, nil
 	}
 
-	// 缓存结果到数据库
-	cacheDuration := time.Duration(dataSource.CacheDuration) * time.Second
-	changed, err := dsf.cacheManager.UpdateDBCacheIfChanged(dataSource.ID, urls, cacheDuration)
-	if err != nil {
-		log.Printf("Failed to cache URLs for data source %d: %v", dataSource.ID, err)
-	} else if changed {
-		log.Printf("数据源 %d 的数据已更新，缓存了 %d 个URL", dataSource.ID, len(urls))
-		// 数据发生变化，清理相关的内存缓存
-		if err := dsf.cacheManager.InvalidateMemoryCacheForDataSource(dataSource.ID); err != nil {
-			log.Printf("Failed to invalidate memory cache for data source %d: %v", dataSource.ID, err)
-		}
-	} else {
-		log.Printf("数据源 %d 的数据未变化，仅更新了过期时间", dataSource.ID)
-	}
+	// 缓存结果到内存
+	dsf.cacheManager.SetMemoryCache(cacheKey, urls)
+	log.Printf("数据源 %d 已缓存 %d 个URL到内存", dataSource.ID, len(urls))
 
 	// 更新最后同步时间
 	now := time.Now()

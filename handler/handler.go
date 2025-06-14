@@ -34,7 +34,7 @@ type Handlers struct {
 func NewHandlers(statsManager *stats.StatsManager) *Handlers {
 	return &Handlers{
 		Stats:         statsManager,
-		cacheDuration: 5 * time.Minute, // 缓存5分钟
+		cacheDuration: 30 * time.Minute, // 缓存30分钟
 	}
 }
 

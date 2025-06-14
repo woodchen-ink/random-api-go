@@ -12,12 +12,6 @@ import (
 	"time"
 )
 
-// CachedEndpoint 缓存的端点数据
-type CachedEndpoint struct {
-	URLs []string
-	// 移除ExpiresAt字段，内存缓存不再自动过期
-}
-
 // EndpointService API端点服务
 type EndpointService struct {
 	cacheManager      *CacheManager
