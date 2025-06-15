@@ -300,7 +300,7 @@ func (p *Preloader) shouldPeriodicRefresh(dataSource *model.DataSource) bool {
 	case "lankong":
 		refreshInterval = 24 * time.Hour // 兰空图床每24小时刷新一次
 	case "s3":
-		refreshInterval = 6 * time.Hour // S3存储每6小时刷新一次
+		refreshInterval = 24 * time.Hour // S3存储每24小时刷新一次
 	default:
 		return false
 	}
