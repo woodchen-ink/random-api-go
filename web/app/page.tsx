@@ -436,6 +436,10 @@ export default function Home() {
           <div className="text-center mt-8 text-sm text-gray-600 dark:text-gray-400">
             <p>随机API服务 - 基于 Next.js 和 Go 构建</p>
             <p className="mt-2">
+              <Link href="https://github.com/woodchen-ink/random-api-go" className="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 underline">
+                GitHub
+              </Link>
+              <span className="mx-2">|</span>
               <Link href="/admin" className="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 underline">
                 管理后台
               </Link>
