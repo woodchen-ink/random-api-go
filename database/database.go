@@ -61,6 +61,11 @@ func Initialize(dataDir string) error {
 	sqlDB.SetMaxIdleConns(1)
 	sqlDB.SetConnMaxLifetime(time.Hour)
 
+	// 在自动迁移之前清理旧的CHECK约束
+	if err := cleanupOldConstraints(); err != nil {
+		return fmt.Errorf("failed to cleanup old constraints: %w", err)
+	}
+
 	// 自动迁移数据库结构
 	if err := autoMigrate(); err != nil {
 		return fmt.Errorf("failed to migrate database: %w", err)
@@ -78,6 +83,80 @@ func autoMigrate() error {
 		&model.URLReplaceRule{},
 		&model.Config{},
 	)
+}
+
+// cleanupOldConstraints 清理旧的CHECK约束
+func cleanupOldConstraints() error {
+	// 检查data_sources表是否存在且包含CHECK约束
+	var count int64
+	err := DB.Raw("SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name='data_sources'").Scan(&count).Error
+	if err != nil {
+		return err
+	}
+
+	// 如果表不存在，直接返回
+	if count == 0 {
+		log.Println("data_sources表不存在，跳过约束清理")
+		return nil
+	}
+
+	// 检查是否有CHECK约束
+	var constraintCount int64
+	err = DB.Raw("SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name='data_sources' AND sql LIKE '%CHECK%'").Scan(&constraintCount).Error
+	if err != nil {
+		return err
+	}
+
+	// 如果没有CHECK约束，直接返回
+	if constraintCount == 0 {
+		log.Println("data_sources表没有CHECK约束，跳过清理")
+		return nil
+	}
+
+	log.Println("检测到旧的CHECK约束，开始清理...")
+
+	// 重建表，去掉CHECK约束
+	// 1. 创建新表（不包含CHECK约束）
+	createNewTableSQL := `
+	CREATE TABLE data_sources_new (
+		id INTEGER PRIMARY KEY AUTOINCREMENT,
+		endpoint_id INTEGER NOT NULL,
+		name TEXT NOT NULL,
+		type TEXT NOT NULL,
+		config TEXT NOT NULL,
+		is_active BOOLEAN DEFAULT true,
+		last_sync DATETIME,
+		created_at DATETIME,
+		updated_at DATETIME,
+		deleted_at DATETIME
+	)`
+
+	if err := DB.Exec(createNewTableSQL).Error; err != nil {
+		return fmt.Errorf("创建新表失败: %w", err)
+	}
+
+	// 2. 复制数据
+	copyDataSQL := `
+	INSERT INTO data_sources_new (id, endpoint_id, name, type, config, is_active, last_sync, created_at, updated_at, deleted_at)
+	SELECT id, endpoint_id, name, type, config, is_active, last_sync, created_at, updated_at, deleted_at
+	FROM data_sources`
+
+	if err := DB.Exec(copyDataSQL).Error; err != nil {
+		return fmt.Errorf("复制数据失败: %w", err)
+	}
+
+	// 3. 删除旧表
+	if err := DB.Exec("DROP TABLE data_sources").Error; err != nil {
+		return fmt.Errorf("删除旧表失败: %w", err)
+	}
+
+	// 4. 重命名新表
+	if err := DB.Exec("ALTER TABLE data_sources_new RENAME TO data_sources").Error; err != nil {
+		return fmt.Errorf("重命名表失败: %w", err)
+	}
+
+	log.Println("旧的CHECK约束清理完成")
+	return nil
 }
 
 // Close 关闭数据库连接

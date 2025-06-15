@@ -22,6 +22,26 @@ type EndpointService struct {
 var endpointService *EndpointService
 var once sync.Once
 
+// 支持的数据源类型列表
+var supportedDataSourceTypes = []string{
+	"lankong",
+	"manual",
+	"api_get",
+	"api_post",
+	"endpoint",
+	"s3",
+}
+
+// validateDataSourceType 验证数据源类型
+func validateDataSourceType(dataSourceType string) error {
+	for _, supportedType := range supportedDataSourceTypes {
+		if dataSourceType == supportedType {
+			return nil
+		}
+	}
+	return fmt.Errorf("unsupported data source type: %s, supported types: %v", dataSourceType, supportedDataSourceTypes)
+}
+
 // GetEndpointService 获取端点服务单例
 func GetEndpointService() *EndpointService {
 	once.Do(func() {
@@ -287,6 +307,11 @@ func (s *EndpointService) applyURLReplaceRules(url, endpointURL string) string {
 
 // CreateDataSource 创建数据源
 func (s *EndpointService) CreateDataSource(dataSource *model.DataSource) error {
+	// 验证数据源类型
+	if err := validateDataSourceType(dataSource.Type); err != nil {
+		return err
+	}
+
 	if err := database.DB.Create(dataSource).Error; err != nil {
 		return fmt.Errorf("failed to create data source: %w", err)
 	}
@@ -304,6 +329,11 @@ func (s *EndpointService) CreateDataSource(dataSource *model.DataSource) error {
 
 // UpdateDataSource 更新数据源
 func (s *EndpointService) UpdateDataSource(dataSource *model.DataSource) error {
+	// 验证数据源类型
+	if err := validateDataSourceType(dataSource.Type); err != nil {
+		return err
+	}
+
 	if err := database.DB.Save(dataSource).Error; err != nil {
 		return fmt.Errorf("failed to update data source: %w", err)
 	}

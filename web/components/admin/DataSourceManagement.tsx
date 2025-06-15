@@ -26,7 +26,7 @@ export default function DataSourceManagement({
   const [editingDataSource, setEditingDataSource] = useState<DataSource | null>(null)
   const [formData, setFormData] = useState({
     name: '',
-    type: 'manual' as 'lankong' | 'manual' | 'api_get' | 'api_post' | 'endpoint',
+    type: 'manual' as 'lankong' | 'manual' | 'api_get' | 'api_post' | 'endpoint' | 's3',
     config: '',
     is_active: true
   })
@@ -185,6 +185,7 @@ export default function DataSourceManagement({
       case 'api_get': return 'GET接口'
       case 'api_post': return 'POST接口'
       case 'endpoint': return '已有端点'
+      case 's3': return 'S3对象存储'
       default: return type
     }
   }
@@ -245,7 +246,7 @@ export default function DataSourceManagement({
                     <select
                       id="ds-type"
                       value={formData.type}
-                      onChange={(e) => setFormData({ ...formData, type: e.target.value as 'lankong' | 'manual' | 'api_get' | 'api_post' | 'endpoint' })}
+                      onChange={(e) => setFormData({ ...formData, type: e.target.value as 'lankong' | 'manual' | 'api_get' | 'api_post' | 'endpoint' | 's3' })}
                       className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                     >
                       <option value="manual">手动数据链接</option>
@@ -253,6 +254,7 @@ export default function DataSourceManagement({
                       <option value="api_get">GET接口</option>
                       <option value="api_post">POST接口</option>
                       <option value="endpoint">已有端点</option>
+                      <option value="s3">S3对象存储</option>
                     </select>
                   </div>
                 </div>

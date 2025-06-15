@@ -32,19 +32,34 @@ func InitData() error {
 
 	// 4. 统计需要预加载的数据源
 	var activeDataSources []model.DataSource
+	var totalDataSources, disabledDataSources, apiDataSources int
+
 	for _, endpoint := range endpoints {
 		if !endpoint.IsActive {
 			continue
 		}
 		for _, ds := range endpoint.DataSources {
-			if ds.IsActive && ds.Type != "api_get" && ds.Type != "api_post" {
-				// API类型的数据源不需要预加载，使用实时请求
-				activeDataSources = append(activeDataSources, ds)
+			totalDataSources++
+
+			if !ds.IsActive {
+				disabledDataSources++
+				log.Printf("跳过禁用的数据源: %s (ID: %d)", ds.Name, ds.ID)
+				continue
 			}
+
+			if ds.Type == "api_get" || ds.Type == "api_post" {
+				apiDataSources++
+				log.Printf("跳过API类型数据源: %s (ID: %d, 类型: %s) - 使用实时请求", ds.Name, ds.ID, ds.Type)
+				continue
+			}
+
+			// 需要预加载的数据源
+			activeDataSources = append(activeDataSources, ds)
 		}
 	}
 
-	log.Printf("发现 %d 个端点，%d 个需要预加载的数据源", len(endpoints), len(activeDataSources))
+	log.Printf("发现 %d 个端点，总共 %d 个数据源", len(endpoints), totalDataSources)
+	log.Printf("其中: 禁用 %d 个，API类型 %d 个，需要预加载 %d 个", disabledDataSources, apiDataSources, len(activeDataSources))
 
 	if len(activeDataSources) == 0 {
 		log.Println("✓ 没有需要预加载的数据源")

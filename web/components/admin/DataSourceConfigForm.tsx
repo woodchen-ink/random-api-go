@@ -11,7 +11,7 @@ import { Trash2, Plus } from 'lucide-react'
 import { authenticatedFetch } from '@/lib/auth'
 
 interface DataSourceConfigFormProps {
-  type: 'lankong' | 'manual' | 'api_get' | 'api_post' | 'endpoint'
+  type: 'lankong' | 'manual' | 'api_get' | 'api_post' | 'endpoint' | 's3'
   config: string
   onChange: (config: string) => void
 }
@@ -40,6 +40,21 @@ interface EndpointConfig {
   endpoint_ids: number[]
 }
 
+interface S3Config {
+  endpoint: string
+  bucket_name: string
+  region: string
+  access_key_id: string
+  secret_access_key: string
+  list_objects_version: string
+  use_path_style: boolean
+  remove_bucket: boolean
+  custom_domain: string
+  folder_path: string
+  include_subfolders: boolean
+  file_extensions: string[]
+}
+
 export default function DataSourceConfigForm({ type, config, onChange }: DataSourceConfigFormProps) {
   const [lankongConfig, setLankongConfig] = useState<LankongConfig>({
     api_token: '',
@@ -59,9 +74,25 @@ export default function DataSourceConfigForm({ type, config, onChange }: DataSou
     endpoint_ids: []
   })
 
+  const [s3Config, setS3Config] = useState<S3Config>({
+    endpoint: '',
+    bucket_name: '',
+    region: '',
+    access_key_id: '',
+    secret_access_key: '',
+    list_objects_version: 'v2',
+    use_path_style: false,
+    remove_bucket: false,
+    custom_domain: '',
+    folder_path: '',
+    include_subfolders: true,
+    file_extensions: []
+  })
+
   const [availableEndpoints, setAvailableEndpoints] = useState<Array<{id: number, name: string, url: string}>>([])
 
   const [headerPairs, setHeaderPairs] = useState<Array<{key: string, value: string}>>([{key: '', value: ''}])
+  const [extensionInputs, setExtensionInputs] = useState<string[]>([''])
   const [savedTokens, setSavedTokens] = useState<SavedToken[]>([])
 
   const [newTokenName, setNewTokenName] = useState<string>('')
@@ -127,6 +158,26 @@ export default function DataSourceConfigForm({ type, config, onChange }: DataSou
         setEndpointConfig({
           endpoint_ids: parsed.endpoint_ids || []
         })
+      } else if (type === 's3') {
+        setS3Config({
+          endpoint: parsed.endpoint || '',
+          bucket_name: parsed.bucket_name || '',
+          region: parsed.region || '',
+          access_key_id: parsed.access_key_id || '',
+          secret_access_key: parsed.secret_access_key || '',
+          list_objects_version: parsed.list_objects_version || 'v2',
+          use_path_style: parsed.use_path_style || false,
+          remove_bucket: parsed.remove_bucket || false,
+          custom_domain: parsed.custom_domain || '',
+          folder_path: parsed.folder_path || '',
+          include_subfolders: parsed.include_subfolders !== false,
+          file_extensions: parsed.file_extensions || []
+        })
+        
+        // 设置文件扩展名输入框
+        const extensions = parsed.file_extensions || ['']
+        if (extensions.length === 0) extensions.push('')
+        setExtensionInputs(extensions)
       }
     } catch (error) {
       console.error('Failed to parse config:', error)
@@ -255,6 +306,33 @@ export default function DataSourceConfigForm({ type, config, onChange }: DataSou
       ? currentIds.filter(id => id !== endpointId)
       : [...currentIds, endpointId]
     updateEndpointConfig(newIds)
+  }
+
+  // 更新S3配置
+  const updateS3Config = (field: keyof S3Config, value: string | boolean | string[]) => {
+    const newConfig = { ...s3Config, [field]: value }
+    setS3Config(newConfig)
+    onChange(JSON.stringify(newConfig))
+  }
+
+  // 添加文件扩展名
+  const addExtension = () => {
+    const newExtensions = [...extensionInputs, '']
+    setExtensionInputs(newExtensions)
+  }
+
+  // 删除文件扩展名
+  const removeExtension = (index: number) => {
+    const newExtensions = extensionInputs.filter((_, i) => i !== index)
+    setExtensionInputs(newExtensions)
+    updateS3Config('file_extensions', newExtensions.filter(ext => ext.trim() !== ''))
+  }
+
+  // 更新文件扩展名
+  const updateExtension = (index: number, value: string) => {
+    const newExtensions = extensionInputs.map((ext, i) => i === index ? value : ext)
+    setExtensionInputs(newExtensions)
+    updateS3Config('file_extensions', newExtensions.filter(ext => ext.trim() !== ''))
   }
 
   if (type === 'manual') {
@@ -553,6 +631,194 @@ export default function DataSourceConfigForm({ type, config, onChange }: DataSou
                   已选择 {endpointConfig.endpoint_ids.length} 个端点
                 </p>
               )}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    )
+  }
+
+  if (type === 's3') {
+    return (
+      <div className="space-y-4">
+        {/* 基础配置 */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-sm">基础配置</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-2">
+                <Label htmlFor="s3-endpoint">S3端点地址</Label>
+                <Input
+                  id="s3-endpoint"
+                  value={s3Config.endpoint}
+                  onChange={(e) => updateS3Config('endpoint', e.target.value)}
+                  placeholder="https://s3.amazonaws.com"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="s3-bucket">存储桶名称</Label>
+                <Input
+                  id="s3-bucket"
+                  value={s3Config.bucket_name}
+                  onChange={(e) => updateS3Config('bucket_name', e.target.value)}
+                  placeholder="my-bucket"
+                />
+              </div>
+            </div>
+            
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-2">
+                <Label htmlFor="s3-region">地区</Label>
+                <Input
+                  id="s3-region"
+                  value={s3Config.region}
+                  onChange={(e) => updateS3Config('region', e.target.value)}
+                  placeholder="us-east-1"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="s3-version">列出对象版本</Label>
+                <select
+                  id="s3-version"
+                  value={s3Config.list_objects_version}
+                  onChange={(e) => updateS3Config('list_objects_version', e.target.value)}
+                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  <option value="v2">v2</option>
+                  <option value="v1">v1</option>
+                </select>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-2">
+                <Label htmlFor="s3-access-key">访问密钥ID</Label>
+                <Input
+                  id="s3-access-key"
+                  value={s3Config.access_key_id}
+                  onChange={(e) => updateS3Config('access_key_id', e.target.value)}
+                  placeholder="AKIAIOSFODNN7EXAMPLE"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="s3-secret-key">访问密钥</Label>
+                <Input
+                  id="s3-secret-key"
+                  type="password"
+                  value={s3Config.secret_access_key}
+                  onChange={(e) => updateS3Config('secret_access_key', e.target.value)}
+                  placeholder="wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY"
+                />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* 高级配置 */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-sm">高级配置</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <div className="flex items-center space-x-2">
+              <Checkbox
+                id="s3-path-style"
+                checked={s3Config.use_path_style}
+                onCheckedChange={(checked) => updateS3Config('use_path_style', checked as boolean)}
+              />
+              <Label htmlFor="s3-path-style">使用Path Style URL</Label>
+            </div>
+
+            <div className="flex items-center space-x-2">
+              <Checkbox
+                id="s3-remove-bucket"
+                checked={s3Config.remove_bucket}
+                onCheckedChange={(checked) => updateS3Config('remove_bucket', checked as boolean)}
+              />
+              <Label htmlFor="s3-remove-bucket">从路径中删除bucket名称</Label>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="s3-custom-domain">自定义访问域名（可选）</Label>
+              <Input
+                id="s3-custom-domain"
+                value={s3Config.custom_domain}
+                onChange={(e) => updateS3Config('custom_domain', e.target.value)}
+                placeholder="https://cdn.example.com"
+              />
+              <p className="text-xs text-muted-foreground">
+                留空使用S3标准URL，支持路径如: https://cdn.example.com/path
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* 文件过滤配置 */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-sm">文件过滤配置</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <div className="space-y-2">
+              <Label htmlFor="s3-folder-path">文件夹路径（可选）</Label>
+              <Input
+                id="s3-folder-path"
+                value={s3Config.folder_path}
+                onChange={(e) => updateS3Config('folder_path', e.target.value)}
+                placeholder="/images"
+              />
+              <p className="text-xs text-muted-foreground">
+                指定要提取的文件夹路径，如: /images 或 /uploads/photos
+              </p>
+            </div>
+
+            <div className="flex items-center space-x-2">
+              <Checkbox
+                id="s3-include-subfolders"
+                checked={s3Config.include_subfolders}
+                onCheckedChange={(checked) => updateS3Config('include_subfolders', checked as boolean)}
+              />
+              <Label htmlFor="s3-include-subfolders">包含所有子文件夹</Label>
+            </div>
+
+            <div className="space-y-2">
+              <Label>文件格式过滤</Label>
+              {extensionInputs.map((ext, index) => (
+                <div key={index} className="flex gap-2">
+                  <Input
+                    value={ext}
+                    onChange={(e) => updateExtension(index, e.target.value)}
+                    placeholder=".jpg 或 .png"
+                    className="flex-1"
+                  />
+                  {extensionInputs.length > 1 && (
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      onClick={() => removeExtension(index)}
+                      className="text-red-600 hover:text-red-700"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  )}
+                </div>
+              ))}
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                onClick={addExtension}
+                className="w-full"
+              >
+                <Plus className="h-4 w-4 mr-1" />
+                添加文件格式
+              </Button>
+              <p className="text-xs text-muted-foreground">
+                留空表示不过滤文件格式，支持正则匹配如: .jpg, .png, .gif
+              </p>
             </div>
           </CardContent>
         </Card>

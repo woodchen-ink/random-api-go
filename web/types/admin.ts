@@ -21,7 +21,7 @@ export interface DataSource {
   id: number
   endpoint_id: number
   name: string
-  type: 'lankong' | 'manual' | 'api_get' | 'api_post' | 'endpoint'
+  type: 'lankong' | 'manual' | 'api_get' | 'api_post' | 'endpoint' | 's3'
   config: string
   is_active: boolean
   last_sync?: string

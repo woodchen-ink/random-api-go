@@ -29,7 +29,7 @@ type DataSource struct {
 	ID         uint           `json:"id" gorm:"primaryKey"`
 	EndpointID uint           `json:"endpoint_id" gorm:"not null;index"`
 	Name       string         `json:"name" gorm:"not null"`
-	Type       string         `json:"type" gorm:"not null;check:type IN ('lankong', 'manual', 'api_get', 'api_post', 'endpoint')"`
+	Type       string         `json:"type" gorm:"not null"`
 	Config     string         `json:"config" gorm:"not null"`
 	IsActive   bool           `json:"is_active" gorm:"default:true"`
 	LastSync   *time.Time     `json:"last_sync,omitempty"`
@@ -80,6 +80,9 @@ type DataSourceConfig struct {
 
 	// 端点配置
 	EndpointConfig *EndpointConfig `json:"endpoint_config,omitempty"`
+
+	// S3配置
+	S3Config *S3Config `json:"s3_config,omitempty"`
 }
 
 type LankongConfig struct {
@@ -102,4 +105,27 @@ type APIConfig struct {
 
 type EndpointConfig struct {
 	EndpointIDs []uint `json:"endpoint_ids"` // 选中的端点ID列表
+}
+
+// S3Config S3通用协议配置
+type S3Config struct {
+	// 基础配置
+	Endpoint        string `json:"endpoint"`          // S3端点地址
+	BucketName      string `json:"bucket_name"`       // 存储桶名称
+	Region          string `json:"region"`            // 地区
+	AccessKeyID     string `json:"access_key_id"`     // 访问密钥ID
+	SecretAccessKey string `json:"secret_access_key"` // 访问密钥
+
+	// 高级配置
+	ListObjectsVersion string `json:"list_objects_version"` // 列出对象版本 (v1/v2)，默认v2
+	UsePathStyle       bool   `json:"use_path_style"`       // 是否使用path style
+	RemoveBucket       bool   `json:"remove_bucket"`        // 是否从路径中删除bucket名称
+
+	// 自定义域名配置
+	CustomDomain string `json:"custom_domain"` // 自定义访问域名，支持路径
+
+	// 文件过滤配置
+	FolderPath        string   `json:"folder_path"`        // 提取的文件夹路径，例如: /img
+	IncludeSubfolders bool     `json:"include_subfolders"` // 是否提取所有子文件夹
+	FileExtensions    []string `json:"file_extensions"`    // 提取的文件格式后缀，支持正则匹配
 }

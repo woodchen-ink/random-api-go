@@ -18,6 +18,14 @@ const nextConfig: NextConfig = {
         {
           source: "/api/:path*",
           destination: "http://localhost:5003/api/:path*",
+        },
+        {
+          source: "/pic/:path*",
+          destination: "http://localhost:5003/pic/:path*",
+        },
+        {
+          source: "/video/:path*",
+          destination: "http://localhost:5003/video/:path*",
         }
       ];
     }

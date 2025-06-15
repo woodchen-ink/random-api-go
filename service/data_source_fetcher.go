@@ -16,6 +16,7 @@ type DataSourceFetcher struct {
 	cacheManager   *CacheManager
 	lankongFetcher *LankongFetcher
 	apiFetcher     *APIFetcher
+	s3Fetcher      *S3Fetcher
 }
 
 // NewDataSourceFetcher 创建数据源获取器
@@ -38,6 +39,7 @@ func NewDataSourceFetcher(cacheManager *CacheManager) *DataSourceFetcher {
 		cacheManager:   cacheManager,
 		lankongFetcher: lankongFetcher,
 		apiFetcher:     NewAPIFetcher(),
+		s3Fetcher:      NewS3Fetcher(),
 	}
 }
 
@@ -86,6 +88,8 @@ func (dsf *DataSourceFetcher) FetchURLs(dataSource *model.DataSource) ([]string,
 		urls, err = dsf.fetchManualURLs(dataSource)
 	case "endpoint":
 		urls, err = dsf.fetchEndpointURLs(dataSource)
+	case "s3":
+		urls, err = dsf.fetchS3URLs(dataSource)
 	default:
 		return nil, fmt.Errorf("unsupported data source type: %s", dataSource.Type)
 	}
@@ -178,6 +182,16 @@ func (dsf *DataSourceFetcher) fetchEndpointURLs(dataSource *model.DataSource) ([
 	}
 
 	return urls, nil
+}
+
+// fetchS3URLs 获取S3存储桶URL
+func (dsf *DataSourceFetcher) fetchS3URLs(dataSource *model.DataSource) ([]string, error) {
+	var config model.S3Config
+	if err := json.Unmarshal([]byte(dataSource.Config), &config); err != nil {
+		return nil, fmt.Errorf("invalid S3 config: %w", err)
+	}
+
+	return dsf.s3Fetcher.FetchURLs(&config)
 }
 
 // updateDataSourceSyncTime 更新数据源的同步时间

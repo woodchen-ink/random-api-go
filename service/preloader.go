@@ -74,6 +74,12 @@ func (p *Preloader) ResumePeriodicRefresh() {
 
 // PreloadDataSourceOnSave 在保存数据源时预加载数据
 func (p *Preloader) PreloadDataSourceOnSave(dataSource *model.DataSource) {
+	// 检查数据源是否处于活跃状态
+	if !dataSource.IsActive {
+		log.Printf("数据源 %d 已禁用，跳过预加载", dataSource.ID)
+		return
+	}
+
 	// API类型的数据源不需要预加载，使用实时请求
 	if dataSource.Type == "api_get" || dataSource.Type == "api_post" {
 		log.Printf("API数据源 %d (%s) 使用实时请求，跳过预加载", dataSource.ID, dataSource.Type)
@@ -133,6 +139,18 @@ func (p *Preloader) RefreshDataSource(dataSourceID uint) error {
 	var dataSource model.DataSource
 	if err := database.DB.First(&dataSource, dataSourceID).Error; err != nil {
 		return err
+	}
+
+	// 检查数据源是否处于活跃状态
+	if !dataSource.IsActive {
+		log.Printf("数据源 %d 已禁用，跳过刷新", dataSourceID)
+		return nil
+	}
+
+	// API类型的数据源不需要预加载，使用实时请求
+	if dataSource.Type == "api_get" || dataSource.Type == "api_post" {
+		log.Printf("API数据源 %d (%s) 使用实时请求，跳过刷新", dataSource.ID, dataSource.Type)
+		return nil
 	}
 
 	log.Printf("手动刷新数据源 %d", dataSourceID)
@@ -281,6 +299,8 @@ func (p *Preloader) shouldPeriodicRefresh(dataSource *model.DataSource) bool {
 	switch dataSource.Type {
 	case "lankong":
 		refreshInterval = 24 * time.Hour // 兰空图床每24小时刷新一次
+	case "s3":
+		refreshInterval = 6 * time.Hour // S3存储每6小时刷新一次
 	default:
 		return false
 	}
