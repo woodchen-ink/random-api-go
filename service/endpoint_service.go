@@ -228,7 +228,13 @@ func (s *EndpointService) getRandomURLRealtime(endpoint *model.APIEndpoint) (str
 		}
 
 		// 递归调用获取目标端点的随机URL
-		return s.GetRandomURL(targetEndpoint.URL)
+		targetURL, err := s.GetRandomURL(targetEndpoint.URL)
+		if err != nil {
+			return "", err
+		}
+
+		// 对从目标端点获取的URL应用当前端点的替换规则
+		return s.applyURLReplaceRules(targetURL, endpoint.URL), nil
 	}
 
 	return s.applyURLReplaceRules(randomURL, endpoint.URL), nil
@@ -280,7 +286,13 @@ func (s *EndpointService) getRandomURLWithCache(endpoint *model.APIEndpoint) (st
 		}
 
 		// 递归调用获取目标端点的随机URL
-		return s.GetRandomURL(targetEndpoint.URL)
+		targetURL, err := s.GetRandomURL(targetEndpoint.URL)
+		if err != nil {
+			return "", err
+		}
+
+		// 对从目标端点获取的URL应用当前端点的替换规则
+		return s.applyURLReplaceRules(targetURL, endpoint.URL), nil
 	}
 
 	return s.applyURLReplaceRules(randomURL, endpoint.URL), nil
