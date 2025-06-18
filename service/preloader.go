@@ -154,7 +154,7 @@ func (p *Preloader) RefreshDataSource(dataSourceID uint) error {
 	}
 
 	log.Printf("手动刷新数据源 %d", dataSourceID)
-	return p.dataSourceFetcher.PreloadDataSource(&dataSource)
+	return p.dataSourceFetcher.RefreshDataSource(&dataSource)
 }
 
 // RefreshEndpoint 手动刷新指定端点的所有数据源
@@ -184,7 +184,7 @@ func (p *Preloader) RefreshEndpoint(endpointID uint) error {
 		go func(ds model.DataSource) {
 			defer wg.Done()
 
-			if err := p.dataSourceFetcher.PreloadDataSource(&ds); err != nil {
+			if err := p.dataSourceFetcher.RefreshDataSource(&ds); err != nil {
 				log.Printf("刷新数据源 %d 失败: %v", ds.ID, err)
 				lastErr = err
 			}
