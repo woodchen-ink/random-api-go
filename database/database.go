@@ -41,7 +41,7 @@ func Initialize(dataDir string) error {
 
 	// 配置GORM
 	config := &gorm.Config{
-		Logger: logger.Default.LogMode(logger.Info),
+		Logger: logger.Default.LogMode(logger.Warn),
 	}
 
 	var err error
