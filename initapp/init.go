@@ -14,23 +14,27 @@ func InitData() error {
 	log.Println("开始初始化应用数据...")
 	start := time.Now()
 
-	// 1. 初始化端点服务（这会启动预加载器）
+	// 1. 初始化域名统计服务
+	_ = service.GetDomainStatsService()
+	log.Println("✓ 域名统计服务已初始化")
+
+	// 2. 初始化端点服务（这会启动预加载器）
 	endpointService := service.GetEndpointService()
 	log.Println("✓ 端点服务已初始化")
 
-	// 2. 暂停预加载器的定期刷新，避免与初始化冲突
+	// 3. 暂停预加载器的定期刷新，避免与初始化冲突
 	preloader := endpointService.GetPreloader()
 	preloader.PausePeriodicRefresh()
 	log.Println("✓ 已暂停预加载器定期刷新")
 
-	// 3. 获取所有活跃的端点和数据源
+	// 4. 获取所有活跃的端点和数据源
 	endpoints, err := endpointService.ListEndpoints()
 	if err != nil {
 		log.Printf("获取端点列表失败: %v", err)
 		return err
 	}
 
-	// 4. 统计需要预加载的数据源
+	// 5. 统计需要预加载的数据源
 	var activeDataSources []model.DataSource
 	var totalDataSources, disabledDataSources, apiDataSources int
 
@@ -69,7 +73,7 @@ func InitData() error {
 		return nil
 	}
 
-	// 5. 并发预加载所有数据源
+	// 6. 并发预加载所有数据源
 	var wg sync.WaitGroup
 	var successCount, failCount int
 	var mutex sync.Mutex
@@ -108,7 +112,7 @@ func InitData() error {
 
 	log.Printf("✓ 数据源预加载完成: 成功 %d 个，失败 %d 个", successCount, failCount)
 
-	// 6. 预热URL统计缓存
+	// 7. 预热URL统计缓存
 	log.Println("预热URL统计缓存...")
 	if err := preloadURLStats(endpointService, endpoints); err != nil {
 		log.Printf("预热URL统计缓存失败: %v", err)
@@ -116,12 +120,12 @@ func InitData() error {
 		log.Println("✓ URL统计缓存预热完成")
 	}
 
-	// 7. 预加载配置
+	// 8. 预加载配置
 	log.Println("预加载系统配置...")
 	preloadConfigs()
 	log.Println("✓ 系统配置预加载完成")
 
-	// 8. 恢复预加载器定期刷新
+	// 9. 恢复预加载器定期刷新
 	preloader.ResumePeriodicRefresh()
 	log.Println("✓ 已恢复预加载器定期刷新")
 

@@ -68,7 +68,6 @@ func (dsf *DataSourceFetcher) FetchURLs(dataSource *model.DataSource) ([]string,
 func (dsf *DataSourceFetcher) FetchURLsWithOptions(dataSource *model.DataSource, skipCache bool) ([]string, error) {
 	// API类型的数据源直接实时请求，不使用缓存
 	if dataSource.Type == "api_get" || dataSource.Type == "api_post" {
-		log.Printf("实时请求API数据源 (类型: %s, ID: %d)", dataSource.Type, dataSource.ID)
 		return dsf.fetchAPIURLs(dataSource)
 	}
 
@@ -78,11 +77,8 @@ func (dsf *DataSourceFetcher) FetchURLsWithOptions(dataSource *model.DataSource,
 	// 如果不跳过缓存，先检查内存缓存
 	if !skipCache {
 		if cachedURLs, exists := dsf.cacheManager.GetFromMemoryCache(cacheKey); exists && len(cachedURLs) > 0 {
-			log.Printf("从内存缓存获取到 %d 个URL (数据源ID: %d)", len(cachedURLs), dataSource.ID)
 			return cachedURLs, nil
 		}
-	} else {
-		log.Printf("跳过缓存，强制从数据源获取最新数据 (数据源ID: %d)", dataSource.ID)
 	}
 
 	var urls []string

@@ -82,6 +82,8 @@ func autoMigrate() error {
 		&model.DataSource{},
 		&model.URLReplaceRule{},
 		&model.Config{},
+		&model.DomainStats{},
+		&model.DailyDomainStats{},
 	)
 }
 

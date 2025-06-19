@@ -1123,3 +1123,36 @@ func (h *AdminHandler) DeleteConfigByKey(w http.ResponseWriter, r *http.Request)
 		"message": "Config deleted successfully",
 	})
 }
+
+// GetDomainStats 获取域名访问统计
+func (h *AdminHandler) GetDomainStats(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	domainStatsService := service.GetDomainStatsService()
+
+	// 获取24小时内统计
+	top24Hours, err := domainStatsService.GetTop24HourDomains()
+	if err != nil {
+		http.Error(w, fmt.Sprintf("Failed to get 24-hour domain stats: %v", err), http.StatusInternalServerError)
+		return
+	}
+
+	// 获取总统计
+	topTotal, err := domainStatsService.GetTopTotalDomains()
+	if err != nil {
+		http.Error(w, fmt.Sprintf("Failed to get total domain stats: %v", err), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"success": true,
+		"data": map[string]interface{}{
+			"top_24_hours": top24Hours,
+			"top_total":    topTotal,
+		},
+	})
+}

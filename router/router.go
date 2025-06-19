@@ -10,6 +10,7 @@ type Router struct {
 	mux            *http.ServeMux
 	staticHandler  StaticHandler
 	authMiddleware *middleware.AuthMiddleware
+	middlewares    []func(http.Handler) http.Handler
 }
 
 // Handler 接口定义处理器需要的方法
@@ -64,12 +65,19 @@ type AdminHandler interface {
 	ListConfigs(w http.ResponseWriter, r *http.Request)
 	CreateOrUpdateConfig(w http.ResponseWriter, r *http.Request)
 	DeleteConfigByKey(w http.ResponseWriter, r *http.Request)
+
+	// 域名统计
+	GetDomainStats(w http.ResponseWriter, r *http.Request)
 }
 
 func New() *Router {
 	return &Router{
 		mux:            http.NewServeMux(),
 		authMiddleware: middleware.NewAuthMiddleware(),
+		middlewares: []func(http.Handler) http.Handler{
+			middleware.MetricsMiddleware,
+			middleware.RateLimiter,
+		},
 	}
 }
 
@@ -162,6 +170,9 @@ func (r *Router) setupAdminRoutes(adminHandler AdminHandler) {
 			adminHandler.CreateOrUpdateConfig(w, r)
 		}
 	}))
+
+	// 域名统计路由 - 需要认证
+	r.HandleFunc("/api/admin/domain-stats", r.authMiddleware.RequireAuth(adminHandler.GetDomainStats))
 }
 
 func (r *Router) HandleFunc(pattern string, handler func(http.ResponseWriter, *http.Request)) {
@@ -175,8 +186,15 @@ func (r *Router) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	// 否则使用默认的路由处理
-	r.mux.ServeHTTP(w, req)
+	// 应用中间件链，然后使用路由处理
+	handler := http.Handler(r.mux)
+
+	// 反向应用中间件（因为要从最外层开始包装）
+	for i := len(r.middlewares) - 1; i >= 0; i-- {
+		handler = r.middlewares[i](handler)
+	}
+
+	handler.ServeHTTP(w, req)
 }
 
 // shouldServeStatic 判断是否应该由静态文件处理器处理

@@ -44,4 +44,14 @@ export interface URLReplaceRule {
 export interface OAuthConfig {
   client_id: string
   base_url: string
+}
+
+export interface DomainStatsResult {
+  domain: string
+  count: number
+}
+
+export interface DomainStatsData {
+  top_24_hours: DomainStatsResult[]
+  top_total: DomainStatsResult[]
 } 

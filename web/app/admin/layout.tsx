@@ -16,6 +16,7 @@ const navItems = [
   { key: 'endpoints', label: 'API端点', href: '/admin' },
   { key: 'rules', label: 'URL替换规则', href: '/admin/rules' },
   { key: 'home', label: '首页配置', href: '/admin/home' },
+  { key: 'stats', label: '域名统计', href: '/admin/stats' },
 ]
 
 export default function AdminLayout({

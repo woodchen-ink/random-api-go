@@ -2,7 +2,6 @@ package service
 
 import (
 	"fmt"
-	"log"
 	"math/rand"
 	"random-api-go/database"
 	"random-api-go/model"
@@ -174,7 +173,6 @@ func (s *EndpointService) GetRandomURL(url string) (string, error) {
 
 	// 如果包含实时数据源，不使用内存缓存，直接实时获取
 	if hasRealtimeDataSource {
-		log.Printf("端点包含实时数据源，使用实时请求模式: %s", url)
 		return s.getRandomURLRealtime(endpoint)
 	}
 
@@ -198,7 +196,6 @@ func (s *EndpointService) getRandomURLRealtime(endpoint *model.APIEndpoint) (str
 
 	// 先随机选择一个数据源
 	selectedDataSource := activeDataSources[rand.Intn(len(activeDataSources))]
-	log.Printf("随机选择数据源: %s (ID: %d)", selectedDataSource.Type, selectedDataSource.ID)
 
 	// 只从选中的数据源获取URL
 	urls, err := s.dataSourceFetcher.FetchURLs(&selectedDataSource)
@@ -256,7 +253,6 @@ func (s *EndpointService) getRandomURLWithCache(endpoint *model.APIEndpoint) (st
 
 	// 先随机选择一个数据源
 	selectedDataSource := activeDataSources[rand.Intn(len(activeDataSources))]
-	log.Printf("随机选择数据源: %s (ID: %d)", selectedDataSource.Type, selectedDataSource.ID)
 
 	// 从选中的数据源获取URL（会使用缓存）
 	urls, err := s.dataSourceFetcher.FetchURLs(&selectedDataSource)
@@ -303,7 +299,6 @@ func (s *EndpointService) applyURLReplaceRules(url, endpointURL string) string {
 	// 获取端点的替换规则
 	endpoint, err := s.GetEndpointByURL(endpointURL)
 	if err != nil {
-		log.Printf("Failed to get endpoint for URL replacement: %v", err)
 		return url
 	}
 

@@ -3,7 +3,9 @@ package middleware
 import (
 	"net/http"
 	"random-api-go/monitoring"
+	"random-api-go/service"
 	"random-api-go/utils"
+	"strings"
 	"time"
 
 	"golang.org/x/time/rate"
@@ -32,6 +34,13 @@ func MetricsMiddleware(next http.Handler) http.Handler {
 			IP:         utils.GetRealIP(r),
 			Referer:    r.Referer(),
 		})
+
+		// 对于管理后台API请求，跳过域名统计以提升性能
+		if !strings.HasPrefix(r.URL.Path, "/api/admin/") {
+			// 记录域名统计
+			domainStatsService := service.GetDomainStatsService()
+			domainStatsService.RecordRequest(r.URL.Path, r.Referer())
+		}
 	})
 }
 

@@ -3,9 +3,10 @@ package middleware
 import (
 	"encoding/json"
 	"fmt"
-	"log"
 	"net/http"
 	"strings"
+	"sync"
+	"time"
 )
 
 // UserInfo OAuth用户信息结构
@@ -17,12 +18,23 @@ type UserInfo struct {
 	Avatar   string `json:"avatar"`
 }
 
+// TokenCache token缓存项
+type TokenCache struct {
+	UserInfo  *UserInfo
+	ExpiresAt time.Time
+}
+
 // AuthMiddleware 认证中间件
-type AuthMiddleware struct{}
+type AuthMiddleware struct {
+	tokenCache sync.Map // map[string]*TokenCache
+	cacheTTL   time.Duration
+}
 
 // NewAuthMiddleware 创建新的认证中间件
 func NewAuthMiddleware() *AuthMiddleware {
-	return &AuthMiddleware{}
+	return &AuthMiddleware{
+		cacheTTL: 30 * time.Minute, // token缓存30分钟
+	}
 }
 
 // RequireAuth 认证中间件，验证 OAuth 令牌
@@ -47,16 +59,34 @@ func (am *AuthMiddleware) RequireAuth(next http.HandlerFunc) http.HandlerFunc {
 			return
 		}
 
-		// 验证令牌（通过调用用户信息接口）
+		// 先检查缓存
+		if cached, ok := am.tokenCache.Load(token); ok {
+			tokenCache := cached.(*TokenCache)
+			// 检查缓存是否过期
+			if time.Now().Before(tokenCache.ExpiresAt) {
+				// 缓存有效，直接通过
+				next(w, r)
+				return
+			} else {
+				// 缓存过期，删除
+				am.tokenCache.Delete(token)
+			}
+		}
+
+		// 缓存未命中或已过期，验证令牌
 		userInfo, err := am.getUserInfo(token)
 		if err != nil {
-			log.Printf("Token validation failed: %v", err)
 			http.Error(w, "Invalid token", http.StatusUnauthorized)
 			return
 		}
 
-		// 令牌有效，继续处理请求
-		log.Printf("Authenticated user: %s (%s)", userInfo.Username, userInfo.Email)
+		// 将结果缓存
+		am.tokenCache.Store(token, &TokenCache{
+			UserInfo:  userInfo,
+			ExpiresAt: time.Now().Add(am.cacheTTL),
+		})
+
+		// 验证成功，继续处理请求
 		next(w, r)
 	}
 }
@@ -70,7 +100,9 @@ func (am *AuthMiddleware) getUserInfo(accessToken string) (*UserInfo, error) {
 
 	req.Header.Set("Authorization", "Bearer "+accessToken)
 
-	client := &http.Client{}
+	client := &http.Client{
+		Timeout: 10 * time.Second, // 添加超时时间
+	}
 	resp, err := client.Do(req)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get user info: %w", err)
@@ -87,4 +119,23 @@ func (am *AuthMiddleware) getUserInfo(accessToken string) (*UserInfo, error) {
 	}
 
 	return &userInfo, nil
+}
+
+// InvalidateToken 使token缓存失效（用于登出等场景）
+func (am *AuthMiddleware) InvalidateToken(token string) {
+	am.tokenCache.Delete(token)
+}
+
+// GetCacheStats 获取缓存统计信息（用于监控）
+func (am *AuthMiddleware) GetCacheStats() map[string]interface{} {
+	count := 0
+	am.tokenCache.Range(func(key, value interface{}) bool {
+		count++
+		return true
+	})
+
+	return map[string]interface{}{
+		"cached_tokens": count,
+		"cache_ttl":     am.cacheTTL.String(),
+	}
 }
