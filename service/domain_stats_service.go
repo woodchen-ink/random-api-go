@@ -149,9 +149,9 @@ func (s *DomainStatsService) hasFileExtension(path string) bool {
 	return false
 }
 
-// startPeriodicSave 启动定期保存任务（每5分钟保存一次）
+// startPeriodicSave 启动定期保存任务（每1分钟保存一次）
 func (s *DomainStatsService) startPeriodicSave() {
-	ticker := time.NewTicker(5 * time.Minute)
+	ticker := time.NewTicker(1 * time.Minute)
 	defer ticker.Stop()
 
 	// 定期清理任务（每天执行一次）
@@ -287,10 +287,11 @@ func (s *DomainStatsService) GetTop24HourDomains() ([]model.DomainStatsResult, e
 		})
 	}
 
-	// 按访问次数降序排序
+	// 按访问次数降序排序，次数相同时按域名首字母排序
 	for i := 0; i < len(results)-1; i++ {
 		for j := i + 1; j < len(results); j++ {
-			if results[i].Count < results[j].Count {
+			if results[i].Count < results[j].Count ||
+				(results[i].Count == results[j].Count && results[i].Domain > results[j].Domain) {
 				results[i], results[j] = results[j], results[i]
 			}
 		}
@@ -345,10 +346,11 @@ func (s *DomainStatsService) GetTopTotalDomains() ([]model.DomainStatsResult, er
 		})
 	}
 
-	// 按访问次数降序排序
+	// 按访问次数降序排序，次数相同时按域名首字母排序
 	for i := 0; i < len(results)-1; i++ {
 		for j := i + 1; j < len(results); j++ {
-			if results[i].Count < results[j].Count {
+			if results[i].Count < results[j].Count ||
+				(results[i].Count == results[j].Count && results[i].Domain > results[j].Domain) {
 				results[i], results[j] = results[j], results[i]
 			}
 		}
