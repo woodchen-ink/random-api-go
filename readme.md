@@ -14,7 +14,7 @@
 
 ## 部署and讨论
 
-<https://www.q58.club/t/topic/127>
+<https://www.sunai.net/t/topic/127>
 
 ## 许可证
 
