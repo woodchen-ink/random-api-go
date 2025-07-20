@@ -11,4 +11,8 @@ services:
       - BASE_URL=https://random-api.czl.net
       - OAUTH_CLIENT_ID=1234567890
       - OAUTH_CLIENT_SECRET=1234567890
+      # 服务开始时间 - ISO 8601格式，Z表示UTC时间
+      # 示例: 2024-01-01T00:00:00Z (UTC时间)
+      # 或者: 2024-01-01T00:00:00+08:00 (北京时间)
+      - SERVICE_START_TIME=2024-01-01T00:00:00Z
     restart: unless-stopped

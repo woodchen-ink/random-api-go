@@ -27,6 +27,8 @@ type Handler interface {
 	HandlePublicEndpoints(w http.ResponseWriter, r *http.Request)
 	// 公开首页配置
 	HandlePublicHomeConfig(w http.ResponseWriter, r *http.Request)
+	// 服务配置
+	HandleServiceConfig(w http.ResponseWriter, r *http.Request)
 }
 
 // StaticHandler 接口定义静态文件处理器需要的方法
@@ -91,6 +93,7 @@ func (r *Router) SetupAllRoutes(handler Handler, adminHandler AdminHandler, stat
 	r.HandleFunc("/api/health", handler.HandleHealth)
 	r.HandleFunc("/api/endpoints", handler.HandlePublicEndpoints)
 	r.HandleFunc("/api/home-config", handler.HandlePublicHomeConfig)
+	r.HandleFunc("/api/service-config", handler.HandleServiceConfig)
 
 	// 设置公开的OAuth配置路由
 	r.HandleFunc("/api/oauth-config", adminHandler.GetOAuthConfig)

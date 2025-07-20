@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"os"
 	"random-api-go/database"
 	"random-api-go/initapp"
 	"random-api-go/monitoring"
@@ -286,6 +287,38 @@ func (h *Handlers) HandlePublicHomeConfig(w http.ResponseWriter, r *http.Request
 	response := map[string]interface{}{
 		"success": true,
 		"data":    map[string]string{"content": content},
+	}
+
+	if err := json.NewEncoder(w).Encode(response); err != nil {
+		http.Error(w, "Error encoding response", http.StatusInternalServerError)
+		return
+	}
+}
+
+// HandleServiceConfig 处理服务配置请求
+func (h *Handlers) HandleServiceConfig(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+
+	// 获取SERVICE_START_TIME环境变量
+	serviceStartTime := os.Getenv("SERVICE_START_TIME")
+
+	var data map[string]interface{}
+	if serviceStartTime != "" {
+		data = map[string]interface{}{
+			"service_start_time": serviceStartTime,
+		}
+	} else {
+		data = map[string]interface{}{}
+	}
+
+	response := map[string]interface{}{
+		"success": true,
+		"data":    data,
 	}
 
 	if err := json.NewEncoder(w).Encode(response); err != nil {
