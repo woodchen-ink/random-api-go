@@ -7,6 +7,7 @@ import remarkGfm from 'remark-gfm'
 import { Button } from '@/components/ui/button'
 import Link from 'next/link'
 import { apiFetch } from '@/lib/config'
+import '@/app/liquid-glass.css'
 
 interface Endpoint {
   id: number;
@@ -120,7 +121,7 @@ function formatUptime(uptimeNs: number): string {
   const days = Math.floor(uptimeMs / (1000 * 60 * 60 * 24));
   const hours = Math.floor((uptimeMs % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
   const minutes = Math.floor((uptimeMs % (1000 * 60 * 60)) / (1000 * 60));
-  
+
   if (days > 0) {
     return `${days}天 ${hours}小时 ${minutes}分钟`;
   } else if (hours > 0) {
@@ -134,12 +135,12 @@ function formatTotalServiceTime(startTime: string): string {
   const start = new Date(startTime);
   const now = new Date();
   const diffMs = now.getTime() - start.getTime();
-  
+
   const days = Math.floor(diffMs / (1000 * 60 * 60 * 24));
   const hours = Math.floor((diffMs % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
   const minutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
   const seconds = Math.floor((diffMs % (1000 * 60)) / 1000);
-  
+
   return `${days}天 ${hours}小时 ${minutes}分钟 ${seconds}秒`;
 }
 
@@ -178,8 +179,8 @@ function copyToClipboard(text: string) {
     textArea.focus();
     textArea.select();
     return new Promise<void>((resolve, reject) => {
-              try {
-          const success = document.execCommand('copy');
+      try {
+        const success = document.execCommand('copy');
         if (success) {
           resolve();
         } else {
@@ -196,14 +197,13 @@ function copyToClipboard(text: string) {
 
 export default function Home() {
   const [content, setContent] = useState('')
-  const [stats, setStats] = useState<{Stats?: Record<string, {TotalCalls: number, TodayCalls: number}>}>({})
-  const [urlStats, setUrlStats] = useState<Record<string, {total_urls: number}>>({})
+  const [stats, setStats] = useState<{ Stats?: Record<string, { TotalCalls: number, TodayCalls: number }> }>({})
+  const [urlStats, setUrlStats] = useState<Record<string, { total_urls: number }>>({})
   const [systemMetrics, setSystemMetrics] = useState<SystemMetrics | null>(null)
   const [endpoints, setEndpoints] = useState<Endpoint[]>([])
   const [copiedUrl, setCopiedUrl] = useState<string | null>(null)
   const [serviceConfig, setServiceConfig] = useState<ServiceConfig>({})
   const [totalServiceTime, setTotalServiceTime] = useState<string>('')
-  const [previousServiceTime, setPreviousServiceTime] = useState<string>('')
 
   useEffect(() => {
     const loadData = async () => {
@@ -215,7 +215,7 @@ export default function Home() {
         getEndpoints(),
         getServiceConfig()
       ])
-      
+
       setContent(contentData)
       setStats(statsData)
       setUrlStats(urlStatsData)
@@ -232,13 +232,11 @@ export default function Home() {
     if (serviceConfig.service_start_time) {
       // 立即更新一次
       const newTime = formatTotalServiceTime(serviceConfig.service_start_time)
-      setPreviousServiceTime(totalServiceTime)
       setTotalServiceTime(newTime)
-      
+
       // 每秒更新一次
       const timer = setInterval(() => {
         const newTime = formatTotalServiceTime(serviceConfig.service_start_time!)
-        setPreviousServiceTime(totalServiceTime)
         setTotalServiceTime(newTime)
       }, 1000)
 
@@ -246,33 +244,6 @@ export default function Home() {
     }
   }, [serviceConfig.service_start_time, totalServiceTime])
 
-  // 数字动画组件
-  const AnimatedNumber = ({ value, label, isChanged }: { value: string, label: string, isChanged: boolean }) => (
-    <div className="text-center group">
-      {/* 数字显示 */}
-      <div className="relative mb-2">
-        {/* 数字背景光晕 */}
-        <div className="absolute inset-0 bg-gradient-to-t from-blue-500/10 to-purple-500/10 rounded-lg blur-md group-hover:from-blue-500/20 group-hover:to-purple-500/20 transition-all duration-300"></div>
-        
-        {/* 数字容器 */}
-        <div className={`relative bg-gray-800/80 border border-gray-600/30 rounded-lg py-3 px-2 transition-all duration-300 group-hover:border-gray-500/50 group-hover:bg-gray-700/80 ${isChanged ? 'animate-pulse border-blue-400/50' : ''}`}>
-          <div className={`text-2xl font-bold bg-gradient-to-r from-white via-gray-100 to-white bg-clip-text text-transparent font-mono leading-none tracking-tight transition-all duration-500 ${isChanged ? 'scale-110' : 'scale-100'}`}>
-            {value.padStart(2, '0')}
-          </div>
-          
-          {/* 变化指示器 */}
-          {isChanged && (
-            <div className="absolute -top-1 -right-1 w-2 h-2 bg-gradient-to-r from-blue-400 to-cyan-400 rounded-full animate-ping"></div>
-          )}
-        </div>
-      </div>
-      
-      {/* 标签 */}
-      <div className="text-xs text-gray-400 font-medium tracking-wider">
-        {label}
-      </div>
-    </div>
-  )
 
   // 解析时间值
   const parseTimeValues = (timeString: string) => {
@@ -280,17 +251,16 @@ export default function Home() {
     const values = parts.filter(p => p.trim() && /^\d+$/.test(p.trim()));
     return {
       days: values[0] || '0',
-      hours: values[1] || '0', 
+      hours: values[1] || '0',
       minutes: values[2] || '0',
       seconds: values[3] || '0'
     };
   }
 
   const currentValues = parseTimeValues(totalServiceTime);
-  const previousValues = parseTimeValues(previousServiceTime);
 
   // 过滤出首页可见的端点
-  const visibleEndpoints = endpoints.filter((endpoint: Endpoint) => 
+  const visibleEndpoints = endpoints.filter((endpoint: Endpoint) =>
     endpoint.is_active && endpoint.show_on_homepage
   )
 
@@ -306,7 +276,7 @@ export default function Home() {
   }
 
   return (
-    <div 
+    <div
       className="min-h-screen bg-gray-900 relative"
       style={{
         backgroundImage: 'url(https://random-api.czl.net/pic/all)',
@@ -317,12 +287,12 @@ export default function Home() {
     >
       {/* 背景遮罩 - 让背景图若影若现 */}
       <div className="absolute inset-0 bg-gray-900/97"></div>
-      
+
       {/* 简洁背景 */}
       <div className="absolute inset-0">
         <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.01)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.01)_1px,transparent_1px)] bg-[size:40px_40px]"></div>
       </div>
-      
+
       <div className="container mx-auto px-4 py-8 relative z-10">
         <div className="max-w-6xl mx-auto">
           {/* Header - 简洁 */}
@@ -336,65 +306,39 @@ export default function Home() {
               Random API Service
             </h1>
             <p className="text-gray-500 mb-2">随机API服务</p>
-            {/* 总服务时间 - 仅在配置了SERVICE_START_TIME环境变量时显示 */}
+            {/* 总服务时间 - 简约风格 */}
             {serviceConfig.service_start_time && (
-              <div className="mt-6 max-w-md mx-auto">
-                <p className="text-sm text-gray-400 mb-3 font-medium tracking-wide">
-                  ⚡ 总服务时间
-                </p>
-                <div className="relative">
-                  {/* 背景光晕效果 */}
-                  <div className="absolute inset-0 bg-gradient-to-r from-blue-500/20 via-purple-500/20 to-cyan-500/20 rounded-2xl blur-xl"></div>
-                  
-                  {/* 主卡片 */}
-                  <div className="relative bg-gradient-to-r from-gray-800/90 via-gray-900/95 to-gray-800/90 backdrop-blur-sm rounded-2xl border border-gray-600/50 p-6 shadow-2xl">
-                    {/* 顶部装饰线 */}
-                    <div className="absolute top-0 left-1/2 transform -translate-x-1/2 w-16 h-0.5 bg-gradient-to-r from-blue-400 via-purple-400 to-cyan-400 rounded-full"></div>
-                    
-                    {/* 时间显示网格 */}
-                    <div className="grid grid-cols-4 gap-3">
-                      <AnimatedNumber 
-                        value={currentValues.days} 
-                        label="天" 
-                        isChanged={currentValues.days !== previousValues.days}
-                      />
-                      <AnimatedNumber 
-                        value={currentValues.hours} 
-                        label="时" 
-                        isChanged={currentValues.hours !== previousValues.hours}
-                      />
-                      <AnimatedNumber 
-                        value={currentValues.minutes} 
-                        label="分" 
-                        isChanged={currentValues.minutes !== previousValues.minutes}
-                      />
-                      <AnimatedNumber 
-                        value={currentValues.seconds} 
-                        label="秒" 
-                        isChanged={currentValues.seconds !== previousValues.seconds}
-                      />
-                    </div>
-                    
-                    {/* 底部装饰 */}
-                    <div className="mt-4 flex justify-center">
-                      <div className="flex space-x-1">
-                        {[...Array(3)].map((_, i) => (
-                          <div
-                            key={i}
-                            className="w-1.5 h-1.5 bg-gradient-to-r from-blue-400 to-purple-400 rounded-full animate-pulse"
-                            style={{
-                              animationDelay: `${i * 200}ms`,
-                              animationDuration: '2s'
-                            }}
-                          ></div>
-                        ))}
+              <div className="mt-6 max-w-xs mx-auto">
+                <div className="bg-gray-800/50 rounded-lg border border-gray-700/50 p-4 liquid-glass">
+                  <p className="text-sm text-gray-500 mb-3 text-center">
+                    总服务时间
+                  </p>
+                  <div className="grid grid-cols-4 gap-2 text-center">
+                    <div>
+                      <div className="text-lg font-mono text-white">
+                        {currentValues.days.padStart(2, '0')}
                       </div>
+                      <div className="text-xs text-gray-500">天</div>
+                    </div>
+                    <div>
+                      <div className="text-lg font-mono text-white">
+                        {currentValues.hours.padStart(2, '0')}
+                      </div>
+                      <div className="text-xs text-gray-500">时</div>
+                    </div>
+                    <div>
+                      <div className="text-lg font-mono text-white">
+                        {currentValues.minutes.padStart(2, '0')}
+                      </div>
+                      <div className="text-xs text-gray-500">分</div>
+                    </div>
+                    <div>
+                      <div className="text-lg font-mono text-white">
+                        {currentValues.seconds.padStart(2, '0')}
+                      </div>
+                      <div className="text-xs text-gray-500">秒</div>
                     </div>
                   </div>
-                  
-                  {/* 侧边装饰线 */}
-                  <div className="absolute left-0 top-1/2 transform -translate-y-1/2 -translate-x-2 w-0.5 h-8 bg-gradient-to-b from-transparent via-blue-400 to-transparent rounded-full"></div>
-                  <div className="absolute right-0 top-1/2 transform -translate-y-1/2 translate-x-2 w-0.5 h-8 bg-gradient-to-b from-transparent via-purple-400 to-transparent rounded-full"></div>
                 </div>
               </div>
             )}
@@ -408,7 +352,7 @@ export default function Home() {
               </h2>
               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
                 {/* 本次启动运行时间 */}
-                <div className="bg-gray-800/50 rounded-lg border border-gray-700/50 p-4">
+                <div className="bg-gray-800/50 rounded-lg border border-gray-700/50 p-4 liquid-glass">
                   <div className="flex items-center justify-between mb-3">
                     <h3 className="text-sm text-gray-400">本次启动</h3>
                     <div className="w-2 h-2 bg-gray-500 rounded-full"></div>
@@ -422,7 +366,7 @@ export default function Home() {
                 </div>
 
                 {/* CPU核心数 */}
-                <div className="bg-gray-800/50 rounded-lg border border-gray-700/50 p-4">
+                <div className="bg-gray-800/50 rounded-lg border border-gray-700/50 p-4 liquid-glass">
                   <div className="flex items-center justify-between mb-3">
                     <h3 className="text-sm text-gray-400">CPU核心</h3>
                     <svg className="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -436,7 +380,7 @@ export default function Home() {
                 </div>
 
                 {/* Goroutine数量 */}
-                <div className="bg-gray-800/50 rounded-lg border border-gray-700/50 p-4">
+                <div className="bg-gray-800/50 rounded-lg border border-gray-700/50 p-4 liquid-glass">
                   <div className="flex items-center justify-between mb-3">
                     <h3 className="text-sm text-gray-400">协程数</h3>
                     <svg className="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -449,7 +393,7 @@ export default function Home() {
                 </div>
 
                 {/* 平均延迟 */}
-                <div className="bg-gray-800/50 rounded-lg border border-gray-700/50 p-4">
+                <div className="bg-gray-800/50 rounded-lg border border-gray-700/50 p-4 liquid-glass">
                   <div className="flex items-center justify-between mb-3">
                     <h3 className="text-sm text-gray-400">平均延迟</h3>
                     <svg className="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -463,7 +407,7 @@ export default function Home() {
                 </div>
 
                 {/* 堆内存分配 */}
-                <div className="bg-gray-800/50 rounded-lg border border-gray-700/50 p-4">
+                <div className="bg-gray-800/50 rounded-lg border border-gray-700/50 p-4 liquid-glass">
                   <div className="flex items-center justify-between mb-3">
                     <h3 className="text-sm text-gray-400">堆内存</h3>
                     <svg className="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -491,9 +435,9 @@ export default function Home() {
                 {visibleEndpoints.map((endpoint: Endpoint) => {
                   const endpointStats = stats.Stats?.[endpoint.url] || { TotalCalls: 0, TodayCalls: 0 }
                   const urlCount = urlStats[endpoint.url]?.total_urls || 0
-                  
+
                   return (
-                    <div key={endpoint.id} className="bg-gray-800/50 rounded-lg border border-gray-700/50 p-5">
+                    <div key={endpoint.id} className="bg-gray-800/50 rounded-lg border border-gray-700/50 p-5 liquid-glass">
                       <div className="flex items-start justify-between mb-4">
                         <div className="flex-1 min-w-0">
                           <h3 className="text-base font-medium text-white truncate">
@@ -504,9 +448,9 @@ export default function Home() {
                           </p>
                         </div>
                         <div className="flex items-center space-x-2 ml-3">
-                          <Button 
-                            size="sm" 
-                            variant="outline" 
+                          <Button
+                            size="sm"
+                            variant="outline"
                             className="text-xs px-3 py-1.5 bg-transparent border-gray-600 text-gray-400 hover:bg-gray-700 hover:text-gray-300"
                             onClick={() => handleCopyUrl(endpoint)}
                           >
@@ -527,7 +471,7 @@ export default function Home() {
                           </Button>
                         </div>
                       </div>
-                      
+
                       <div className="grid grid-cols-3 gap-3 text-center mb-4">
                         <div className="bg-gray-700/30 rounded p-2">
                           <p className="text-xs text-gray-500 mb-1">今日</p>
@@ -548,7 +492,7 @@ export default function Home() {
                           </p>
                         </div>
                       </div>
-                      
+
                       {endpoint.description && (
                         <p className="text-sm text-gray-500 line-clamp-2">
                           {endpoint.description}
@@ -564,22 +508,22 @@ export default function Home() {
           {/* Main Content - 简洁内容区 */}
           <div className="bg-gray-800/30 rounded-lg border border-gray-700/50 p-8 mb-12">
             <div className="prose prose-lg max-w-none prose-invert">
-              <ReactMarkdown 
+              <ReactMarkdown
                 remarkPlugins={[remarkGfm]}
                 components={{
-                  h1: ({children}) => <h1 className="text-3xl font-medium mb-6 text-white">{children}</h1>,
-                  h2: ({children}) => <h2 className="text-xl font-medium mb-4 text-gray-200">{children}</h2>,
-                  h3: ({children}) => <h3 className="text-lg font-medium mb-3 text-gray-300">{children}</h3>,
-                  p: ({children}) => <p className="mb-4 text-gray-400 leading-relaxed">{children}</p>,
-                  ul: ({children}) => <ul className="list-disc list-inside mb-4 space-y-1">{children}</ul>,
-                  ol: ({children}) => <ol className="list-decimal list-inside mb-4 space-y-1">{children}</ol>,
-                  li: ({children}) => <li className="mb-1 text-gray-400">{children}</li>,
-                  strong: ({children}) => <strong className="font-medium text-gray-200">{children}</strong>,
-                  em: ({children}) => <em className="italic text-gray-400">{children}</em>,
-                  code: ({children}) => <code className="bg-gray-700/50 border border-gray-600 px-2 py-1 rounded text-sm font-mono text-gray-300">{children}</code>,
-                  pre: ({children}) => <pre className="bg-gray-800/50 border border-gray-600 p-4 rounded overflow-x-auto mb-4">{children}</pre>,
-                  blockquote: ({children}) => <blockquote className="border-l-4 border-gray-600 pl-4 italic text-gray-400 mb-4">{children}</blockquote>,
-                  a: ({href, children}) => <a href={href} className="text-gray-300 hover:text-white underline" target="_blank" rel="noopener noreferrer">{children}</a>,
+                  h1: ({ children }) => <h1 className="text-3xl font-medium mb-6 text-white">{children}</h1>,
+                  h2: ({ children }) => <h2 className="text-xl font-medium mb-4 text-gray-200">{children}</h2>,
+                  h3: ({ children }) => <h3 className="text-lg font-medium mb-3 text-gray-300">{children}</h3>,
+                  p: ({ children }) => <p className="mb-4 text-gray-400 leading-relaxed">{children}</p>,
+                  ul: ({ children }) => <ul className="list-disc list-inside mb-4 space-y-1">{children}</ul>,
+                  ol: ({ children }) => <ol className="list-decimal list-inside mb-4 space-y-1">{children}</ol>,
+                  li: ({ children }) => <li className="mb-1 text-gray-400">{children}</li>,
+                  strong: ({ children }) => <strong className="font-medium text-gray-200">{children}</strong>,
+                  em: ({ children }) => <em className="italic text-gray-400">{children}</em>,
+                  code: ({ children }) => <code className="bg-gray-700/50 border border-gray-600 px-2 py-1 rounded text-sm font-mono text-gray-300">{children}</code>,
+                  pre: ({ children }) => <pre className="bg-gray-800/50 border border-gray-600 p-4 rounded overflow-x-auto mb-4">{children}</pre>,
+                  blockquote: ({ children }) => <blockquote className="border-l-4 border-gray-600 pl-4 italic text-gray-400 mb-4">{children}</blockquote>,
+                  a: ({ href, children }) => <a href={href} className="text-gray-300 hover:text-white underline" target="_blank" rel="noopener noreferrer">{children}</a>,
                 }}
               >
                 {content}
