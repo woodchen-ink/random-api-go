@@ -7,6 +7,13 @@ import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Switch } from '@/components/ui/switch'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from '@/components/ui/dialog'
 import DataSourceManagement from './DataSourceManagement'
 import type { APIEndpoint } from '@/types/admin'
 import { authenticatedFetch } from '@/lib/auth'
@@ -74,7 +81,14 @@ function SortableTableRow({ endpoint, onManageDataSources, onEditEndpoint }: {
         {endpoint.name}
       </TableCell>
       <TableCell>
-        {endpoint.url}
+        <a 
+          href={`/${endpoint.url}`} 
+          target="_blank" 
+          rel="noopener noreferrer"
+          className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 underline hover:no-underline"
+        >
+          {endpoint.url}
+        </a>
       </TableCell>
       <TableCell>
         <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
@@ -120,8 +134,8 @@ function SortableTableRow({ endpoint, onManageDataSources, onEditEndpoint }: {
 }
 
 export default function EndpointsTab({ endpoints, onCreateEndpoint, onUpdateEndpoint, onUpdateEndpoints }: EndpointsTabProps) {
-  const [showCreateForm, setShowCreateForm] = useState(false)
-  const [showEditForm, setShowEditForm] = useState(false)
+  const [showCreateDialog, setShowCreateDialog] = useState(false)
+  const [showEditDialog, setShowEditDialog] = useState(false)
   const [editingEndpoint, setEditingEndpoint] = useState<APIEndpoint | null>(null)
   const [selectedEndpoint, setSelectedEndpoint] = useState<APIEndpoint | null>(null)
   const [formData, setFormData] = useState({
@@ -143,7 +157,7 @@ export default function EndpointsTab({ endpoints, onCreateEndpoint, onUpdateEndp
     e.preventDefault()
     onCreateEndpoint(formData)
     setFormData({ name: '', url: '', description: '', is_active: true, show_on_homepage: true })
-    setShowCreateForm(false)
+    setShowCreateDialog(false)
   }
 
   const handleEditSubmit = (e: React.FormEvent) => {
@@ -151,7 +165,7 @@ export default function EndpointsTab({ endpoints, onCreateEndpoint, onUpdateEndp
     if (editingEndpoint) {
       onUpdateEndpoint(editingEndpoint.id, formData)
       setFormData({ name: '', url: '', description: '', is_active: true, show_on_homepage: true })
-      setShowEditForm(false)
+      setShowEditDialog(false)
       setEditingEndpoint(null)
     }
   }
@@ -165,7 +179,7 @@ export default function EndpointsTab({ endpoints, onCreateEndpoint, onUpdateEndp
       is_active: endpoint.is_active,
       show_on_homepage: endpoint.show_on_homepage
     })
-    setShowEditForm(true)
+    setShowEditDialog(true)
   }
 
   const loadEndpointDataSources = async (endpointId: number) => {
@@ -235,15 +249,17 @@ export default function EndpointsTab({ endpoints, onCreateEndpoint, onUpdateEndp
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-2xl font-bold tracking-tight">API端点管理</h2>
         <Button
-          onClick={() => setShowCreateForm(true)}
+          onClick={() => setShowCreateDialog(true)}
         >
           创建端点
         </Button>
       </div>
 
-      {showCreateForm && (
-        <div className="bg-card rounded-lg border p-6 mb-6">
-          <h3 className="text-lg font-medium mb-4">创建新端点</h3>
+      <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>创建新端点</DialogTitle>
+          </DialogHeader>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="name">端点名称</Label>
@@ -293,25 +309,33 @@ export default function EndpointsTab({ endpoints, onCreateEndpoint, onUpdateEndp
                 <Label htmlFor="show_on_homepage">显示在首页</Label>
               </div>
             </div>
-            <div className="flex space-x-3">
+            <DialogFooter>
               <Button type="submit">
                 创建
               </Button>
               <Button
                 type="button"
-                onClick={() => setShowCreateForm(false)}
+                onClick={() => setShowCreateDialog(false)}
                 variant="outline"
               >
                 取消
               </Button>
-            </div>
+            </DialogFooter>
           </form>
-        </div>
-      )}
+        </DialogContent>
+      </Dialog>
 
-      {showEditForm && editingEndpoint && (
-        <div className="bg-card rounded-lg border p-6 mb-6">
-          <h3 className="text-lg font-medium mb-4">编辑端点</h3>
+      <Dialog open={showEditDialog} onOpenChange={(open) => {
+        if (!open) {
+          setShowEditDialog(false)
+          setEditingEndpoint(null)
+          setFormData({ name: '', url: '', description: '', is_active: true, show_on_homepage: true })
+        }
+      }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>编辑端点</DialogTitle>
+          </DialogHeader>
           <form onSubmit={handleEditSubmit} className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="edit-name">端点名称</Label>
@@ -361,14 +385,14 @@ export default function EndpointsTab({ endpoints, onCreateEndpoint, onUpdateEndp
                 <Label htmlFor="edit-show_on_homepage">显示在首页</Label>
               </div>
             </div>
-            <div className="flex space-x-3">
+            <DialogFooter>
               <Button type="submit">
                 更新
               </Button>
               <Button
                 type="button"
                 onClick={() => {
-                  setShowEditForm(false)
+                  setShowEditDialog(false)
                   setEditingEndpoint(null)
                   setFormData({ name: '', url: '', description: '', is_active: true, show_on_homepage: true })
                 }}
@@ -376,10 +400,10 @@ export default function EndpointsTab({ endpoints, onCreateEndpoint, onUpdateEndp
               >
                 取消
               </Button>
-            </div>
+            </DialogFooter>
           </form>
-        </div>
-      )}
+        </DialogContent>
+      </Dialog>
 
       <div className="rounded-md border">
         <DndContext
