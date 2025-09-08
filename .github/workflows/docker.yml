@@ -8,6 +8,7 @@ on:
       - 'lankong_tools/**'
       - '*.md'
       - '.github/**'
+  workflow_dispatch:
 
 env:
   IMAGE_NAME: random-api-go
