@@ -11,7 +11,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/s3 v1.80.2
 	github.com/glebarez/sqlite v1.11.0
 	golang.org/x/time v0.12.0
-	gorm.io/gorm v1.30.0
+	gorm.io/gorm v1.30.5
 )
 
 require (
