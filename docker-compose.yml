@@ -1,7 +1,7 @@
 services:
   random-api-go:
     container_name: random-api-go
-    image: woodchen/random-api-go:latest
+    image: ghcr.io/woodchen-ink/random-api-go:latest
     ports:
       - "5003:5003"
     volumes:
