@@ -172,7 +172,7 @@ export default function DomainStatsTab() {
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <div>
-          <h2 className="text-2xl font-bold">域名访问统计</h2>
+          <h2 className="text-2xl font-bold">域名统计</h2>
           {lastUpdateTime && (
             <p className="text-sm text-gray-500 mt-1">
               最后更新: {formatUpdateTime(lastUpdateTime)}
