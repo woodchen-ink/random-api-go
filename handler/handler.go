@@ -9,10 +9,10 @@ import (
 	"os"
 	"random-api-go/database"
 	"random-api-go/initapp"
+	"random-api-go/middleware"
 	"random-api-go/monitoring"
 	"random-api-go/service"
 	"random-api-go/stats"
-	"random-api-go/utils"
 	"strings"
 	"sync"
 	"time"
@@ -53,7 +53,7 @@ func (h *Handlers) HandleAPIRequest(w http.ResponseWriter, r *http.Request) {
 
 	go func() {
 		start := time.Now()
-		realIP := utils.GetRealIP(r)
+		realIP := middleware.GetRealIP(r)
 
 		path := strings.TrimPrefix(r.URL.Path, "/")
 

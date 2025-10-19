@@ -4,7 +4,6 @@ import (
 	"net/http"
 	"random-api-go/monitoring"
 	"random-api-go/service"
-	"random-api-go/utils"
 	"strings"
 	"time"
 )
@@ -27,7 +26,7 @@ func MetricsMiddleware(next http.Handler) http.Handler {
 			Method:     r.Method,
 			StatusCode: rw.statusCode,
 			Latency:    float64(duration.Microseconds()) / 1000,
-			IP:         utils.GetRealIP(r),
+			IP:         GetRealIP(r),
 			Referer:    r.Referer(),
 		})
 
