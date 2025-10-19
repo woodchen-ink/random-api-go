@@ -77,8 +77,10 @@ func New() *Router {
 		mux:            http.NewServeMux(),
 		authMiddleware: middleware.NewAuthMiddleware(),
 		middlewares: []func(http.Handler) http.Handler{
-			middleware.MetricsMiddleware,
-			middleware.RateLimiter,
+			middleware.RealIPMiddleware,         // 最先执行,获取真实 IP
+			middleware.SmartBotBlockerMiddleware, // 第二执行,智能阻止机器人(不同路径不同策略)
+			middleware.MetricsMiddleware,         // 第三执行,记录指标
+			middleware.RateLimiter,               // 最后执行,限流
 		},
 	}
 }

@@ -10,6 +10,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/credentials v1.17.69
 	github.com/aws/aws-sdk-go-v2/service/s3 v1.80.2
 	github.com/glebarez/sqlite v1.11.0
+	github.com/woodchen-ink/go-web-utils v1.2.0
 	golang.org/x/time v0.12.0
 	gorm.io/gorm v1.30.0
 )
