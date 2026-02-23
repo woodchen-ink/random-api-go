@@ -42,14 +42,16 @@ interface EndpointsTabProps {
   endpoints: APIEndpoint[]
   onCreateEndpoint: (data: Partial<APIEndpoint>) => void
   onUpdateEndpoint: (id: number, data: Partial<APIEndpoint>) => void
+  onDeleteEndpoint: (id: number) => void
   onUpdateEndpoints: () => void
 }
 
 // 可拖拽的表格行组件
-function SortableTableRow({ endpoint, onManageDataSources, onEditEndpoint }: {
+function SortableTableRow({ endpoint, onManageDataSources, onEditEndpoint, onDeleteEndpoint }: {
   endpoint: APIEndpoint
   onManageDataSources: (endpoint: APIEndpoint) => void
   onEditEndpoint: (endpoint: APIEndpoint) => void
+  onDeleteEndpoint: (endpoint: APIEndpoint) => void
 }) {
   const {
     attributes,
@@ -127,16 +129,25 @@ function SortableTableRow({ endpoint, onManageDataSources, onEditEndpoint }: {
           >
             管理数据源
           </Button>
+          <Button
+            onClick={() => onDeleteEndpoint(endpoint)}
+            variant="destructive"
+            size="sm"
+          >
+            删除
+          </Button>
         </div>
       </TableCell>
     </TableRow>
   )
 }
 
-export default function EndpointsTab({ endpoints, onCreateEndpoint, onUpdateEndpoint, onUpdateEndpoints }: EndpointsTabProps) {
+export default function EndpointsTab({ endpoints, onCreateEndpoint, onUpdateEndpoint, onDeleteEndpoint, onUpdateEndpoints }: EndpointsTabProps) {
   const [showCreateDialog, setShowCreateDialog] = useState(false)
   const [showEditDialog, setShowEditDialog] = useState(false)
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false)
   const [editingEndpoint, setEditingEndpoint] = useState<APIEndpoint | null>(null)
+  const [deletingEndpoint, setDeletingEndpoint] = useState<APIEndpoint | null>(null)
   const [selectedEndpoint, setSelectedEndpoint] = useState<APIEndpoint | null>(null)
   const [formData, setFormData] = useState({
     name: '',
@@ -201,6 +212,19 @@ export default function EndpointsTab({ endpoints, onCreateEndpoint, onUpdateEndp
   const handleManageDataSources = (endpoint: APIEndpoint) => {
     setSelectedEndpoint(endpoint)
     loadEndpointDataSources(endpoint.id)
+  }
+
+  const handleDeleteEndpoint = (endpoint: APIEndpoint) => {
+    setDeletingEndpoint(endpoint)
+    setShowDeleteDialog(true)
+  }
+
+  const confirmDeleteEndpoint = () => {
+    if (deletingEndpoint) {
+      onDeleteEndpoint(deletingEndpoint.id)
+      setShowDeleteDialog(false)
+      setDeletingEndpoint(null)
+    }
   }
 
   // 处理拖拽结束事件
@@ -405,6 +429,39 @@ export default function EndpointsTab({ endpoints, onCreateEndpoint, onUpdateEndp
         </DialogContent>
       </Dialog>
 
+      <Dialog open={showDeleteDialog} onOpenChange={(open) => {
+        if (!open) {
+          setShowDeleteDialog(false)
+          setDeletingEndpoint(null)
+        }
+      }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>确认删除</DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-muted-foreground">
+            确定要删除端点 <span className="font-semibold text-foreground">{deletingEndpoint?.name}</span> 吗？此操作将同时删除该端点下的所有数据源和URL替换规则，且不可恢复。
+          </p>
+          <DialogFooter>
+            <Button
+              variant="destructive"
+              onClick={confirmDeleteEndpoint}
+            >
+              确认删除
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setShowDeleteDialog(false)
+                setDeletingEndpoint(null)
+              }}
+            >
+              取消
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       <div className="rounded-md border">
         <DndContext
           sensors={sensors}
@@ -434,6 +491,7 @@ export default function EndpointsTab({ endpoints, onCreateEndpoint, onUpdateEndp
                     endpoint={endpoint}
                     onManageDataSources={handleManageDataSources}
                     onEditEndpoint={handleEditEndpoint}
+                    onDeleteEndpoint={handleDeleteEndpoint}
                   />
                 ))}
               </SortableContext>

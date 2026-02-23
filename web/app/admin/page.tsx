@@ -60,11 +60,29 @@ export default function AdminPage() {
     }
   }
 
+  const deleteEndpoint = async (id: number) => {
+    try {
+      const response = await authenticatedFetch(`/api/admin/endpoints/${id}`, {
+        method: 'DELETE',
+      })
+
+      if (response.ok) {
+        loadEndpoints()
+      } else {
+        alert('删除端点失败')
+      }
+    } catch (error) {
+      console.error('Failed to delete endpoint:', error)
+      alert('删除端点失败')
+    }
+  }
+
   return (
-    <EndpointsTab 
-      endpoints={endpoints} 
+    <EndpointsTab
+      endpoints={endpoints}
       onCreateEndpoint={createEndpoint}
       onUpdateEndpoint={updateEndpoint}
+      onDeleteEndpoint={deleteEndpoint}
       onUpdateEndpoints={loadEndpoints}
     />
   )
