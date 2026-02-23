@@ -60,9 +60,11 @@ const DomainStatsTable = ({
                   <TableCell className="font-medium">{index + 1}</TableCell>
                   <TableCell>
                     <span className="font-mono">
-                      {item.domain === 'direct' ? '直接访问' : 
-                       item.domain === 'unknown' ? '未知来源' : 
-                       item.domain}
+                      {item.domain === 'direct' ? '直接访问' :
+                       item.domain === 'unknown' ? '未知来源' :
+                       <a href={`https://${item.domain}`} target="_blank" rel="noopener noreferrer" className="underline underline-offset-4 hover:text-accent transition-colors">
+                         {item.domain}
+                       </a>}
                     </span>
                   </TableCell>
                   <TableCell className="text-right">
