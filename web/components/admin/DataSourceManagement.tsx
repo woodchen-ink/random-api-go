@@ -154,6 +154,29 @@ export default function DataSourceManagement({
     setFormData({ name: '', type: 'manual' as const, config: '', is_active: true })
   }
 
+  const toggleDataSourceActive = async (dataSource: DataSource) => {
+    try {
+      const response = await authenticatedFetch(`/api/admin/data-sources/${dataSource.id}`, {
+        method: 'PUT',
+        body: JSON.stringify({
+          name: dataSource.name,
+          type: dataSource.type,
+          config: dataSource.config,
+          is_active: !dataSource.is_active
+        }),
+      })
+
+      if (response.ok) {
+        onUpdate()
+      } else {
+        alert('切换数据源状态失败')
+      }
+    } catch (error) {
+      console.error('Failed to toggle data source:', error)
+      alert('切换数据源状态失败')
+    }
+  }
+
   const deleteDataSource = async (dataSourceId: number) => {
     if (!confirm('确定要删除这个数据源吗？')) {
       return
@@ -314,13 +337,15 @@ export default function DataSourceManagement({
                         </span>
                       </TableCell>
                       <TableCell>
-                        <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                          dataSource.is_active 
-                            ? 'bg-green-100 text-green-800 dark:bg-green-800 dark:text-green-100' 
-                            : 'bg-red-100 text-red-800 dark:bg-red-800 dark:text-red-100'
-                        }`}>
-                          {dataSource.is_active ? '启用' : '禁用'}
-                        </span>
+                        <div className="flex items-center space-x-2">
+                          <Switch
+                            checked={dataSource.is_active}
+                            onCheckedChange={() => toggleDataSourceActive(dataSource)}
+                          />
+                          <span className="text-xs text-muted-foreground">
+                            {dataSource.is_active ? '启用' : '禁用'}
+                          </span>
+                        </div>
                       </TableCell>
                       <TableCell>
                         {dataSource.last_sync ? new Date(dataSource.last_sync).toLocaleString() : '未同步'}
