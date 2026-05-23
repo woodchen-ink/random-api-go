@@ -1,221 +1,209 @@
 'use client'
 
-import { useState, useEffect, useRef, useCallback } from 'react'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
-import { Switch } from '@/components/ui/switch'
+import { useCallback, useEffect, useMemo, useState } from 'react'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Button } from '@/components/ui/button'
 import { authenticatedFetch } from '@/lib/auth'
-import type { DomainStatsResult } from '@/types/admin'
+import { toast } from 'sonner'
+import type { DomainStatsData, DomainStatsResult } from '@/types/admin'
+import DomainTrendChart from './domain-stats/DomainTrendChart'
+import DomainTopBarChart from './domain-stats/DomainTopBarChart'
+import DomainRankTable from './domain-stats/DomainRankTable'
+import DomainPathDrilldown from './domain-stats/DomainPathDrilldown'
+import BlockedDomainsPanel from './domain-stats/BlockedDomainsPanel'
 
-// 表格组件，用于显示域名统计数据
-const DomainStatsTable = ({ 
-  title, 
-  data, 
-  loading 
-}: { 
-  title: string; 
-  data: DomainStatsResult[] | null; 
-  loading: boolean 
-}) => {
-  const formatNumber = (num: number) => {
-    return num.toLocaleString()
-  }
+type DrillRange = '24h' | '7d' | '30d' | 'total'
 
-  if (loading) {
-    return (
-      <Card>
-        <CardHeader>
-          <CardTitle>{title}</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="flex justify-center items-center py-8">
-            <div className="text-gray-500">加载中...</div>
-          </div>
-        </CardContent>
-      </Card>
-    )
-  }
-
-  return (
-    <Card>
-      <CardHeader>
-        <CardTitle>{title}</CardTitle>
-      </CardHeader>
-      <CardContent>
-        {!data || data.length === 0 ? (
-          <p className="text-gray-500 text-center py-4">暂无数据</p>
-        ) : (
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="w-12">排名</TableHead>
-                <TableHead>域名</TableHead>
-                <TableHead className="text-right">访问次数</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {data.map((item, index) => (
-                <TableRow key={`${item.domain}-${item.count}`}>
-                  <TableCell className="font-medium">{index + 1}</TableCell>
-                  <TableCell>
-                    <span className="font-mono">
-                      {item.domain === 'direct' ? '直接访问' :
-                       item.domain === 'unknown' ? '未知来源' :
-                       <a href={`https://${item.domain}`} target="_blank" rel="noopener noreferrer" className="underline underline-offset-4 hover:text-accent transition-colors">
-                         {item.domain}
-                       </a>}
-                    </span>
-                  </TableCell>
-                  <TableCell className="text-right">
-                    {formatNumber(item.count)}
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        )}
-      </CardContent>
-    </Card>
-  )
-}
-
+// 域名统计页面: 拆为「总览」「24h」「7 天」「30 天」「总排行」「黑名单」六个 sub-tab
+// 数据手动刷新, 不自动轮询, 避免点开下钻或切换禁用时表格抖动
 export default function DomainStatsTab() {
-  // 状态管理
+  const [data, setData] = useState<DomainStatsData | null>(null)
   const [loading, setLoading] = useState(false)
-  const [refreshing, setRefreshing] = useState(false)
-  const [stats24h, setStats24h] = useState<DomainStatsResult[] | null>(null)
-  const [statsTotal, setStatsTotal] = useState<DomainStatsResult[] | null>(null)
   const [error, setError] = useState<string | null>(null)
-  const [autoRefresh, setAutoRefresh] = useState(true)
   const [lastUpdateTime, setLastUpdateTime] = useState<Date | null>(null)
-  const intervalRef = useRef<NodeJS.Timeout | null>(null)
+  const [blocklistBump, setBlocklistBump] = useState(0)
 
-  // 加载域名统计数据
-  const loadDomainStats = useCallback(async (isInitialLoad = false) => {
+  const [drillDomain, setDrillDomain] = useState<string | null>(null)
+  const [drillRange, setDrillRange] = useState<DrillRange>('24h')
+
+  const load = useCallback(async () => {
     try {
-      if (isInitialLoad) {
-        setLoading(true)
-      } else {
-        setRefreshing(true)
-      }
+      setLoading(true)
       setError(null)
-      
-      const response = await authenticatedFetch('/api/admin/domain-stats')
-      if (response.ok) {
-        const data = await response.json()
-        if (data.data) {
-          setStats24h(data.data.top_24_hours || [])
-          setStatsTotal(data.data.top_total || [])
-          setLastUpdateTime(new Date())
-        }
-      } else {
-        throw new Error('获取域名统计失败')
-      }
-    } catch (error) {
-      console.error('Failed to load domain stats:', error)
-      setError('获取域名统计失败')
+      const resp = await authenticatedFetch('/api/admin/domain-stats')
+      if (!resp.ok) throw new Error('获取域名统计失败')
+      const json = await resp.json()
+      setData(json.data as DomainStatsData)
+      setLastUpdateTime(new Date())
+    } catch (e) {
+      setError((e as Error).message)
     } finally {
       setLoading(false)
-      setRefreshing(false)
     }
   }, [])
 
-  // 初始加载
   useEffect(() => {
-    loadDomainStats(true)
-  }, [loadDomainStats])
+    load()
+  }, [load])
 
-  // 自动刷新设置
-  useEffect(() => {
-    if (autoRefresh) {
-      // 设置自动刷新定时器
-      intervalRef.current = setInterval(() => {
-        loadDomainStats(false)
-      }, 5000) // 每5秒刷新一次
-    } else {
-      // 清除定时器
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current)
-        intervalRef.current = null
+  // 切换某个域名的禁用状态; 成功后局部更新, 不重新拉整张表
+  const toggleBlock = useCallback(async (domain: string, blocked: boolean) => {
+    try {
+      const resp = await authenticatedFetch('/api/admin/domain-stats/block', {
+        method: 'PUT',
+        body: JSON.stringify({ domain, blocked }),
+      })
+      if (!resp.ok) {
+        const text = await resp.text()
+        throw new Error(text || '操作失败')
       }
+      setData(prev => {
+        if (!prev) return prev
+        const patch = (list: DomainStatsResult[]) =>
+          list.map(r => (r.domain === domain ? { ...r, is_blocked: blocked } : r))
+        return {
+          top_24_hours: patch(prev.top_24_hours),
+          top_7_days: patch(prev.top_7_days),
+          top_30_days: patch(prev.top_30_days),
+          top_total: patch(prev.top_total),
+        }
+      })
+      setBlocklistBump(v => v + 1)
+      toast.success(blocked ? `已禁用 ${domain}` : `已解除 ${domain}`)
+    } catch (e) {
+      toast.error((e as Error).message)
     }
+  }, [])
 
-    // 清理函数
-    return () => {
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current)
-      }
+  const pickDomain = useCallback((range: DrillRange) => (domain: string) => {
+    if (domain === 'direct' || domain === 'unknown') return
+    setDrillRange(range)
+    setDrillDomain(domain)
+  }, [])
+
+  const top24 = data?.top_24_hours ?? null
+  const top7 = data?.top_7_days ?? null
+  const top30 = data?.top_30_days ?? null
+  const totalRank = data?.top_total ?? null
+
+  const summary = useMemo(() => {
+    const sum = (list: DomainStatsResult[] | null) => (list ?? []).reduce((s, r) => s + r.count, 0)
+    return {
+      day: sum(top24),
+      week: sum(top7),
+      month: sum(top30),
+      total: sum(totalRank),
     }
-  }, [autoRefresh, loadDomainStats])
+  }, [top24, top7, top30, totalRank])
 
-  // 格式化更新时间
-  const formatUpdateTime = (time: Date | null) => {
-    if (!time) return ''
-    return time.toLocaleTimeString()
-  }
-
-  // 显示错误状态
-  if (error && !stats24h && !statsTotal) {
+  if (error && !data) {
     return (
-      <div className="flex flex-col items-center justify-center py-8 space-y-4">
-        <div className="text-red-500">{error}</div>
-        <Button
-          onClick={() => loadDomainStats(true)}
-          variant="default"
-        >
-          重试
-        </Button>
+      <div className="flex flex-col items-center justify-center py-12 space-y-4">
+        <p className="text-destructive">{error}</p>
+        <Button onClick={load}>重试</Button>
       </div>
     )
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center">
+    <div className="space-y-4">
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h2 className="text-2xl font-bold">域名统计</h2>
           {lastUpdateTime && (
-            <p className="text-sm text-gray-500 mt-1">
-              最后更新: {formatUpdateTime(lastUpdateTime)}
-              {refreshing && <span className="ml-2 animate-pulse">刷新中...</span>}
+            <p className="text-sm text-muted-foreground mt-1">
+              最后更新: {lastUpdateTime.toLocaleTimeString()}
             </p>
           )}
         </div>
-        <div className="flex items-center space-x-4">
-          <div className="flex items-center space-x-2">
-            <Switch
-              checked={autoRefresh}
-              onCheckedChange={setAutoRefresh}
-              id="auto-refresh"
-            />
-            <label htmlFor="auto-refresh" className="text-sm">
-              自动刷新 (5秒)
-            </label>
-          </div>
-          <Button
-            onClick={() => loadDomainStats(false)}
-            disabled={refreshing}
-            variant="default"
-          >
-            {refreshing ? '刷新中...' : '手动刷新'}
-          </Button>
-        </div>
+        <Button onClick={load} disabled={loading} variant="default">
+          {loading ? '刷新中...' : '刷新'}
+        </Button>
       </div>
 
-      <div className="grid gap-6 md:grid-cols-2">
-        <DomainStatsTable 
-          title="24小时内访问最多的域名 (前30)" 
-          data={stats24h} 
-          loading={loading && !stats24h} 
-        />
-        
-        <DomainStatsTable 
-          title="总访问最多的域名 (前30)" 
-          data={statsTotal} 
-          loading={loading && !statsTotal} 
-        />
-      </div>
+      <Tabs defaultValue="overview" className="w-full">
+        <TabsList>
+          <TabsTrigger value="overview">总览</TabsTrigger>
+          <TabsTrigger value="d1">24 小时</TabsTrigger>
+          <TabsTrigger value="d7">7 天</TabsTrigger>
+          <TabsTrigger value="d30">30 天</TabsTrigger>
+          <TabsTrigger value="total">总排行</TabsTrigger>
+          <TabsTrigger value="blocked">黑名单</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="overview" className="space-y-4 pt-2">
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            <SummaryCard label="今日访问" value={summary.day} />
+            <SummaryCard label="7 天访问" value={summary.week} />
+            <SummaryCard label="30 天访问" value={summary.month} />
+            <SummaryCard label="历史合计 (Top 30)" value={summary.total} />
+          </div>
+          <div className="grid gap-4 lg:grid-cols-2">
+            <DomainTrendChart />
+            <DomainTopBarChart data={top30} />
+          </div>
+        </TabsContent>
+
+        <TabsContent value="d1" className="pt-2">
+          <DomainRankTable
+            title="24 小时内访问最多的域名 (Top 30)"
+            data={top24}
+            loading={loading}
+            onPickDomain={pickDomain('24h')}
+            onToggleBlock={toggleBlock}
+          />
+        </TabsContent>
+
+        <TabsContent value="d7" className="pt-2">
+          <DomainRankTable
+            title="最近 7 天访问最多的域名 (Top 30)"
+            data={top7}
+            loading={loading}
+            onPickDomain={pickDomain('7d')}
+            onToggleBlock={toggleBlock}
+          />
+        </TabsContent>
+
+        <TabsContent value="d30" className="pt-2">
+          <DomainRankTable
+            title="最近 30 天访问最多的域名 (Top 30)"
+            data={top30}
+            loading={loading}
+            onPickDomain={pickDomain('30d')}
+            onToggleBlock={toggleBlock}
+          />
+        </TabsContent>
+
+        <TabsContent value="total" className="pt-2">
+          <DomainRankTable
+            title="历史总访问最多的域名 (Top 30)"
+            data={totalRank}
+            loading={loading}
+            onPickDomain={pickDomain('total')}
+            onToggleBlock={toggleBlock}
+          />
+        </TabsContent>
+
+        <TabsContent value="blocked" className="pt-2">
+          <BlockedDomainsPanel refreshKey={blocklistBump} />
+        </TabsContent>
+      </Tabs>
+
+      <DomainPathDrilldown
+        domain={drillDomain}
+        open={!!drillDomain}
+        onOpenChange={(v) => !v && setDrillDomain(null)}
+        defaultRange={drillRange}
+      />
     </div>
   )
-} 
+}
+
+function SummaryCard({ label, value }: { label: string; value: number }) {
+  return (
+    <div className="rounded-lg border bg-card p-4">
+      <p className="text-xs text-muted-foreground">{label}</p>
+      <p className="text-2xl font-semibold tabular-nums mt-1">{value.toLocaleString()}</p>
+    </div>
+  )
+}

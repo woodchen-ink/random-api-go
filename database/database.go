@@ -77,6 +77,12 @@ func Initialize(dataDir string) error {
 
 // autoMigrate 自动迁移数据库结构
 func autoMigrate() error {
+	// 升级前: domain_stats / daily_domain_stats 引入 (domain, path) 联合维度
+	// 旧记录 path 为空, 无法拆分到具体 path; 直接清空旧聚合, 让新统计从零开始
+	if err := migrateDomainStatsAddPath(); err != nil {
+		return err
+	}
+
 	return DB.AutoMigrate(
 		&model.APIEndpoint{},
 		&model.DataSource{},
@@ -84,7 +90,34 @@ func autoMigrate() error {
 		&model.Config{},
 		&model.DomainStats{},
 		&model.DailyDomainStats{},
+		&model.BlockedDomain{},
 	)
+}
+
+// migrateDomainStatsAddPath 在引入 path 维度前清理旧的 domain 聚合表
+// 旧数据按 domain 唯一, 加 path 列后无法回填具体路径, 保留会让总数翻倍
+func migrateDomainStatsAddPath() error {
+	for _, table := range []string{"domain_stats", "daily_domain_stats"} {
+		var count int64
+		if err := DB.Raw("SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name=?", table).Scan(&count).Error; err != nil {
+			return err
+		}
+		if count == 0 {
+			continue
+		}
+		var hasPath int64
+		// table 来自固定枚举, 不存在注入风险; pragma 不支持参数化表名
+		if err := DB.Raw("SELECT COUNT(*) FROM pragma_table_info('" + table + "') WHERE name='path'").Scan(&hasPath).Error; err != nil {
+			return err
+		}
+		if hasPath == 0 {
+			log.Printf("迁移 %s: 引入 path 维度, 清空旧聚合数据", table)
+			if err := DB.Exec("DELETE FROM " + table).Error; err != nil {
+				return fmt.Errorf("清空 %s 失败: %w", table, err)
+			}
+		}
+	}
+	return nil
 }
 
 // cleanupOldConstraints 清理旧的CHECK约束

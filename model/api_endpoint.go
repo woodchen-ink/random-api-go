@@ -131,29 +131,56 @@ type S3Config struct {
 }
 
 // DomainStats 域名访问统计模型
+// 按 (domain, path) 联合维度统计累计访问次数; 域名级聚合通过 SUM(count) 得到
 type DomainStats struct {
 	ID        uint           `json:"id" gorm:"primaryKey"`
-	Domain    string         `json:"domain" gorm:"index;not null"` // 来源域名
-	Count     uint64         `json:"count" gorm:"default:0"`       // 访问次数
-	LastSeen  time.Time      `json:"last_seen"`                    // 最后访问时间
+	Domain    string         `json:"domain" gorm:"uniqueIndex:idx_domain_path;index;not null"` // 来源域名
+	Path      string         `json:"path" gorm:"uniqueIndex:idx_domain_path;not null;default:''"` // 调用的端点路径
+	Count     uint64         `json:"count" gorm:"default:0"`                                   // 访问次数
+	LastSeen  time.Time      `json:"last_seen"`                                                // 最后访问时间
+	CreatedAt time.Time      `json:"created_at"`
+	UpdatedAt time.Time      `json:"updated_at"`
+	DeletedAt gorm.DeletedAt `json:"-" gorm:"index"`
+}
+
+// BlockedDomain 被禁用的来源域名(命中后拒绝访问随机端点)
+type BlockedDomain struct {
+	ID        uint           `json:"id" gorm:"primaryKey"`
+	Domain    string         `json:"domain" gorm:"uniqueIndex;not null"`
+	Reason    string         `json:"reason"`
 	CreatedAt time.Time      `json:"created_at"`
 	UpdatedAt time.Time      `json:"updated_at"`
 	DeletedAt gorm.DeletedAt `json:"-" gorm:"index"`
 }
 
 // DailyDomainStats 每日域名访问统计模型
+// 按 (date, domain, path) 三维统计当日访问次数
 type DailyDomainStats struct {
 	ID        uint           `json:"id" gorm:"primaryKey"`
-	Domain    string         `json:"domain" gorm:"index;not null"` // 来源域名
-	Date      time.Time      `json:"date" gorm:"index;not null"`   // 统计日期
-	Count     uint64         `json:"count" gorm:"default:0"`       // 当日访问次数
+	Domain    string         `json:"domain" gorm:"uniqueIndex:idx_date_domain_path;index;not null"` // 来源域名
+	Path      string         `json:"path" gorm:"uniqueIndex:idx_date_domain_path;not null;default:''"` // 调用的端点路径
+	Date      time.Time      `json:"date" gorm:"uniqueIndex:idx_date_domain_path;index;not null"`   // 统计日期
+	Count     uint64         `json:"count" gorm:"default:0"`                                        // 当日访问次数
 	CreatedAt time.Time      `json:"created_at"`
 	UpdatedAt time.Time      `json:"updated_at"`
 	DeletedAt gorm.DeletedAt `json:"-" gorm:"index"`
 }
 
-// DomainStatsResult 域名统计结果
+// DomainStatsResult 域名聚合结果(汇总到 domain 维度)
 type DomainStatsResult struct {
-	Domain string `json:"domain"`
-	Count  uint64 `json:"count"`
+	Domain    string `json:"domain"`
+	Count     uint64 `json:"count"`
+	IsBlocked bool   `json:"is_blocked"`
+}
+
+// DomainPathStatsResult 域名下 path 维度统计结果
+type DomainPathStatsResult struct {
+	Path  string `json:"path"`
+	Count uint64 `json:"count"`
+}
+
+// DomainDailyPoint 单日访问量数据点 (用于趋势图)
+type DomainDailyPoint struct {
+	Date  string `json:"date"`
+	Count uint64 `json:"count"`
 }

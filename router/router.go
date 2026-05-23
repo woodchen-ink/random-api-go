@@ -70,6 +70,10 @@ type AdminHandler interface {
 
 	// 域名统计
 	GetDomainStats(w http.ResponseWriter, r *http.Request)
+	GetDomainPathStats(w http.ResponseWriter, r *http.Request)
+	GetDomainTrend(w http.ResponseWriter, r *http.Request)
+	UpdateDomainBlockStatus(w http.ResponseWriter, r *http.Request)
+	ListBlockedDomains(w http.ResponseWriter, r *http.Request)
 }
 
 func New() *Router {
@@ -77,10 +81,11 @@ func New() *Router {
 		mux:            http.NewServeMux(),
 		authMiddleware: middleware.NewAuthMiddleware(),
 		middlewares: []func(http.Handler) http.Handler{
-			middleware.RealIPMiddleware,                   // 最先执行,获取真实 IP
-			middleware.RandomEndpointBrowserOnlyMiddleware, // 第二执行,随机端点仅限浏览器访问
-			middleware.MetricsMiddleware,                  // 第三执行,记录指标
-			middleware.RateLimiter,                        // 最后执行,限流
+			middleware.RealIPMiddleware,                    // 最先执行,获取真实 IP
+			middleware.RandomEndpointBrowserOnlyMiddleware, // 随机端点仅限浏览器访问
+			middleware.RefererBlockMiddleware,              // referer 黑名单拦截 (拦截后不进入指标统计)
+			middleware.MetricsMiddleware,                   // 记录指标 + 域名统计
+			middleware.RateLimiter,                         // 最后执行, 限流
 		},
 	}
 }
@@ -178,6 +183,10 @@ func (r *Router) setupAdminRoutes(adminHandler AdminHandler) {
 
 	// 域名统计路由 - 需要认证
 	r.HandleFunc("/api/admin/domain-stats", r.authMiddleware.RequireAuth(adminHandler.GetDomainStats))
+	r.HandleFunc("/api/admin/domain-stats/paths", r.authMiddleware.RequireAuth(adminHandler.GetDomainPathStats))
+	r.HandleFunc("/api/admin/domain-stats/trend", r.authMiddleware.RequireAuth(adminHandler.GetDomainTrend))
+	r.HandleFunc("/api/admin/domain-stats/block", r.authMiddleware.RequireAuth(adminHandler.UpdateDomainBlockStatus))
+	r.HandleFunc("/api/admin/blocked-domains", r.authMiddleware.RequireAuth(adminHandler.ListBlockedDomains))
 }
 
 func (r *Router) HandleFunc(pattern string, handler func(http.ResponseWriter, *http.Request)) {

@@ -1124,24 +1124,31 @@ func (h *AdminHandler) DeleteConfigByKey(w http.ResponseWriter, r *http.Request)
 	})
 }
 
-// GetDomainStats 获取域名访问统计
+// GetDomainStats 获取域名访问统计 (按 24h / 7d / 30d / total 四个维度返回排行)
 func (h *AdminHandler) GetDomainStats(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
 	}
 
-	domainStatsService := service.GetDomainStatsService()
+	svc := service.GetDomainStatsService()
 
-	// 获取24小时内统计
-	top24Hours, err := domainStatsService.GetTop24HourDomains()
+	top24Hours, err := svc.GetTop24HourDomains()
 	if err != nil {
 		http.Error(w, fmt.Sprintf("Failed to get 24-hour domain stats: %v", err), http.StatusInternalServerError)
 		return
 	}
-
-	// 获取总统计
-	topTotal, err := domainStatsService.GetTopTotalDomains()
+	top7Days, err := svc.GetTop7DayDomains()
+	if err != nil {
+		http.Error(w, fmt.Sprintf("Failed to get 7-day domain stats: %v", err), http.StatusInternalServerError)
+		return
+	}
+	top30Days, err := svc.GetTop30DayDomains()
+	if err != nil {
+		http.Error(w, fmt.Sprintf("Failed to get 30-day domain stats: %v", err), http.StatusInternalServerError)
+		return
+	}
+	topTotal, err := svc.GetTopTotalDomains()
 	if err != nil {
 		http.Error(w, fmt.Sprintf("Failed to get total domain stats: %v", err), http.StatusInternalServerError)
 		return
@@ -1152,7 +1159,123 @@ func (h *AdminHandler) GetDomainStats(w http.ResponseWriter, r *http.Request) {
 		"success": true,
 		"data": map[string]interface{}{
 			"top_24_hours": top24Hours,
+			"top_7_days":   top7Days,
+			"top_30_days":  top30Days,
 			"top_total":    topTotal,
 		},
+	})
+}
+
+// GetDomainPathStats 返回某个域名下的 path 调用排行 (?domain=xxx&range=24h|7d|30d|total)
+func (h *AdminHandler) GetDomainPathStats(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+	domain := r.URL.Query().Get("domain")
+	if domain == "" {
+		http.Error(w, "domain is required", http.StatusBadRequest)
+		return
+	}
+	rangeKey := r.URL.Query().Get("range")
+	if rangeKey == "" {
+		rangeKey = "24h"
+	}
+
+	rows, err := service.GetDomainStatsService().GetDomainPathStats(domain, rangeKey)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("Failed to get domain path stats: %v", err), http.StatusInternalServerError)
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"success": true,
+		"data": map[string]interface{}{
+			"domain": domain,
+			"range":  rangeKey,
+			"paths":  rows,
+		},
+	})
+}
+
+// UpdateDomainBlockStatus 切换某个域名的禁用状态 (PUT /api/admin/domain-stats/block, body: {domain, blocked, reason})
+func (h *AdminHandler) UpdateDomainBlockStatus(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPut && r.Method != http.MethodPost {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+	var req struct {
+		Domain  string `json:"domain"`
+		Blocked bool   `json:"blocked"`
+		Reason  string `json:"reason"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, fmt.Sprintf("Invalid JSON: %v", err), http.StatusBadRequest)
+		return
+	}
+	if req.Domain == "" {
+		http.Error(w, "domain is required", http.StatusBadRequest)
+		return
+	}
+	if req.Domain == "direct" || req.Domain == "unknown" {
+		http.Error(w, "direct/unknown 不支持单独禁用, 请使用 referer 策略开关", http.StatusBadRequest)
+		return
+	}
+	if err := service.GetDomainStatsService().SetBlocked(req.Domain, req.Reason, req.Blocked); err != nil {
+		http.Error(w, fmt.Sprintf("Failed to update block status: %v", err), http.StatusInternalServerError)
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"success": true,
+		"data":    map[string]interface{}{"domain": strings.ToLower(req.Domain), "blocked": req.Blocked},
+	})
+}
+
+// GetDomainTrend 返回最近 N 天每日总访问量 (?days=30, 默认 30, 最多 90)
+func (h *AdminHandler) GetDomainTrend(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+	days := 30
+	if v := r.URL.Query().Get("days"); v != "" {
+		if n, err := strconv.Atoi(v); err == nil && n > 0 {
+			if n > 90 {
+				n = 90
+			}
+			days = n
+		}
+	}
+	series, err := service.GetDomainStatsService().GetDailyTotalSeries(days)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("Failed to get domain trend: %v", err), http.StatusInternalServerError)
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"success": true,
+		"data": map[string]interface{}{
+			"days":   days,
+			"series": series,
+		},
+	})
+}
+
+// ListBlockedDomains 列出所有被禁用的域名
+func (h *AdminHandler) ListBlockedDomains(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+	rows, err := service.GetDomainStatsService().ListBlockedDomains()
+	if err != nil {
+		http.Error(w, fmt.Sprintf("Failed to list blocked domains: %v", err), http.StatusInternalServerError)
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"success": true,
+		"data":    rows,
 	})
 }

@@ -49,9 +49,41 @@ export interface OAuthConfig {
 export interface DomainStatsResult {
   domain: string
   count: number
+  is_blocked: boolean
 }
 
 export interface DomainStatsData {
   top_24_hours: DomainStatsResult[]
+  top_7_days: DomainStatsResult[]
+  top_30_days: DomainStatsResult[]
   top_total: DomainStatsResult[]
-} 
+}
+
+export interface DomainPathStat {
+  path: string
+  count: number
+}
+
+export interface DomainPathStatsResponse {
+  domain: string
+  range: string
+  paths: DomainPathStat[]
+}
+
+export interface DomainDailyPoint {
+  date: string
+  count: number
+}
+
+export interface DomainTrendData {
+  days: number
+  series: DomainDailyPoint[]
+}
+
+export interface BlockedDomain {
+  id: number
+  domain: string
+  reason: string
+  created_at: string
+  updated_at: string
+}
