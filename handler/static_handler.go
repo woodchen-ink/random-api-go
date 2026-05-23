@@ -24,8 +24,8 @@ func (s *StaticHandler) ServeStatic(w http.ResponseWriter, r *http.Request) {
 	// 实现 try_files $uri $uri/ @router 逻辑
 	filePath := s.tryFiles(path)
 
-	// 设置正确的 Content-Type
-	s.setContentType(w, filePath)
+	// 设置正确的 Content-Type 与缓存头（按资源类型分流）
+	s.setResponseHeaders(w, r.URL.Path, filePath)
 
 	// 服务文件
 	http.ServeFile(w, r, filePath)
@@ -86,13 +86,22 @@ func (s *StaticHandler) isDirectory(path string) bool {
 	return info.IsDir()
 }
 
-// setContentType 设置正确的 Content-Type
-func (s *StaticHandler) setContentType(w http.ResponseWriter, filePath string) {
+// setResponseHeaders 按资源类型设置 Content-Type / Cache-Control / Vary
+// 关键点: Next.js 16 App Router 的 *.txt 是 RSC payload, 必须返回 text/x-component,
+// 否则客户端 router 收到非 RSC content-type 会回退到硬导航, 浏览器直接展示纯文本 payload。
+func (s *StaticHandler) setResponseHeaders(w http.ResponseWriter, urlPath, filePath string) {
 	ext := strings.ToLower(filepath.Ext(filePath))
 
 	switch ext {
+	case ".txt":
+		// Next.js RSC payload (例如 /admin/home.txt)
+		w.Header().Set("Content-Type", "text/x-component; charset=utf-8")
+		w.Header().Set("Cache-Control", "public, max-age=60, stale-while-revalidate=300")
+		w.Header().Set("Vary", "RSC, Next-Router-State-Tree, Next-Router-Prefetch, Next-Url")
 	case ".html":
 		w.Header().Set("Content-Type", "text/html; charset=utf-8")
+		w.Header().Set("Cache-Control", "no-cache")
+		w.Header().Set("Vary", "RSC, Next-Router-State-Tree, Next-Router-Prefetch, Next-Url")
 	case ".css":
 		w.Header().Set("Content-Type", "text/css; charset=utf-8")
 	case ".js":
@@ -109,5 +118,11 @@ func (s *StaticHandler) setContentType(w http.ResponseWriter, filePath string) {
 		w.Header().Set("Content-Type", "image/svg+xml")
 	case ".ico":
 		w.Header().Set("Content-Type", "image/x-icon")
+	}
+
+	// 带 hash 的不可变静态资源 (Next.js: /_next/static/*) 走长期 immutable
+	if strings.HasPrefix(urlPath, "/_next/static/") {
+		w.Header().Set("Cache-Control", "public, max-age=31536000, immutable")
+		w.Header().Del("Vary")
 	}
 }
