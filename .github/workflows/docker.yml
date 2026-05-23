@@ -5,7 +5,6 @@ on:
     branches:
       - main
     paths-ignore:
-      - 'lankong_tools/**'
       - '*.md'
       - '.github/**'
   workflow_dispatch:
@@ -56,3 +55,10 @@ jobs:
           platforms: linux/amd64
           cache-from: type=gha
           cache-to: type=gha,mode=max
+
+      - name: Trigger Dokploy deploy
+        env:
+          DOKPLOY_WEBHOOK_URL: ${{ secrets.DOKPLOY_WEBHOOK_URL }}
+        if: ${{ env.DOKPLOY_WEBHOOK_URL != '' }}
+        run: |
+          curl --fail-with-body -sS -X POST "$DOKPLOY_WEBHOOK_URL"
