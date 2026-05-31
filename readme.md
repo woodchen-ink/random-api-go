@@ -2,7 +2,7 @@
 
 一个基于Go的随机API服务，支持多种数据源和管理后台。
 
-![image](data\ScreenShot_2026-05-31_061426_579.png)
+![image](data/ScreenShot_2026-05-31_061426_579.png)
 
 ## Why this project matters
 
