@@ -2,6 +2,12 @@
 
 一个基于Go的随机API服务，支持多种数据源和管理后台。
 
+![image](data\ScreenShot_2026-05-31_061426_579.png)
+
+## Why this project matters
+
+Random API Go is a self-hosted random media API service for small websites, blogs, forums, image/video collections, and community projects. It supports multiple data sources including LskyPro, S3-compatible object storage, manual configuration, and generic GET/POST APIs. The project is actively maintained and provides a lightweight alternative for users who want to avoid relying on closed or unstable third-party random image/video APIs.
+
 ## 功能特性
 
 - 🎯 支持多种数据源：兰空图床API, s3协议对象存储, 手动配置, 通用API接口(GET/POST)
@@ -15,6 +21,14 @@
 ## 部署and讨论
 
 <https://www.sunai.net/t/topic/127>
+
+## Maintenance roadmap
+
+- Improve test coverage for data source adapters
+- Add automated checks for API compatibility
+- Improve Docker deployment and upgrade workflows
+- Add security review for OAuth, admin panel, and storage configuration
+- Use AI-assisted PR review and release note generation
 
 ## 许可证
 
