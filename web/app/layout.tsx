@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import "./globals.css";
-import Script from "next/script";
 import { Toaster } from "@/components/ui/sonner";
 
 
@@ -16,7 +15,6 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="zh-CN">
-      <Script async src="https://l.czl.net/script.js" data-website-id="fd458fd1-2228-4bb0-bddf-d90d5407d102" />
       <body
         className={`antialiased`}
       >
